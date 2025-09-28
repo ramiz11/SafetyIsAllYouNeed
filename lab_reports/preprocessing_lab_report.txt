@@ -1,0 +1,27 @@
+* how are the crimes counted for each checkin:
+- if crime occurred up till before t(weeks) from checkin
+- if its within n(km) radius from poi's location coordinates
+- all such crimes are aggregated into the crimes surrounding a certain POI checkin.
+
+-----------------------------------------------------------------------------------------------------
+Check-ins dataset preprocessing:
+
+1) poi_id are converted to a range of 0 - Integer, instead of things like : "4abc1f51f964a520798620e3"
+2) Data splitting: 80-10-10 Time-Based split; how ? Sort the data based on 'local_time" (see README.md file for explanation on this feature), first 80% is training set, 80%-90% is validation set and the rest is test set.
+3) re-index poi_id to achieve contiguous ids[0, ...M-1]. The aim here is to make sure that the POI_ID range is actually the maximum number and not have jumps like [1,4,9, 19, 20,21,90] that occur randomly because of the nature of the split, and convert them into a converged set of numbers where max number will be the final unique poi_id (33979).
+4) Trajectory Extraction: Filter the data to achieve high time-granularity → n(varies) consecutive check-ins within 24 hours 
+
+Introduction to safety calculation:
+
+Normalized Safety Score = 1 - *normalized_crime_count
+*normalized_crime_count: go over each pair of consecutive POIS, count crimes in each route, then iterate over the same routes again, and perform *robust scaling: (crime_count_in_current_route - median_crime_count_in_all_routes) / IQR (IQR = Q3__of_crime_count_in_all_routes - Q1_of_crime_count_in_all_routes), given the normalized count of crimes, 1 - that score, is the normalized safety score.
+Safety calculation for validation and test trajectory follows the same principle, but it's more straightforward, as it divides the amount of crimes in a route between two consecutive pois by the crime count deduced in the training trajectories, so that the scaling will be done by the training parameters, avoiding data leakage.
+*why robust scaling? Dividing by the maximum crime count amongst all routes can squash typical values if there’s even a single extremely high outlier. Robust scaling, which uses the median and interquartile range, is less sensitive to these outliers. This makes it particularly effective for skewed distributions such as crime data. As a result, robust scaling preserves more meaningful distinctions among typical values while still keeping extreme counts in check.
+
+Safety Injection:
+
+5) calculate crimes count in route from poi A to poi B, based on a public crimes dataset, go over all crimes, for each crime, if it occurred within an 'm' meters radius from the crime scenes and up to 't' weeks before it.
+6) normalize the trajectory crimes based on the train crime parameters.
+7) construct textual trajectories from numeric ones (construct_textual_trajectories())
+8) finally, we inject the pre-calculated safety scores to the textual prompts
+and altered instruction that makes the model pay attention explicitly to safety scores along a trajectory.

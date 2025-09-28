@@ -1,0 +1,85 @@
+** Introduction ** :
+
+The task is framed as a question-answering (Q&A) problem rather than a classification problem**
+Standard “Instruction Tuning” Approach
+Train with Question + Answer in the Input
+Concatenate your prompt with the ground‐truth answer:
+
+<question>: ...
+(the entire trajectory, etc.)
+
+<answer>: user 64 will visit POI id 4022
+Mask out the question tokens in labels (by setting them to -100) so that only the answer tokens are used to compute the training loss.
+
+During training, the model is fed question+answer in each example.
+The cross‐entropy loss is only calculated on the answer tokens.
+At inference, you feed only the <question> (no ground‐truth answer). The model autoregressively generates the <answer> text on its own.
+
+This approach is extremely common for “instruction tuning” style fine‐tuning (like how ChatGPT or Llama‐2‐Chat are trained on question–answer pairs).
+It’s implemented with the Hugging Face Trainer by setting labels[i] = -100 for question tokens and labels[i] = input_ids[i] for answer tokens.
+It also allows the model to learn the format of the answer (e.g. “At [time], user [id] will visit POI id ...”).
+
+Training with teacher forcing does indeed let the model see the ground truth tokens.
+At inference, the model does not see them; it must generate them from its learned distribution.
+Despite that apparent mismatch, this works extremely well in practice, because the model has learned how to “complete” the context with the correct tokens.
+
+**HyperParameters & Training Config**
+learning rate of 2e-5, combined with a warm-up of 20 steps, a weight decay of 0, a batch size of 1 per GPU.
+
+Quantization of weights → reduce to 16 bits.
+
+Fine-tune the model for 3 epochs utilizing LoRA (Low-rank adaptation) --> apply LoRA only to attention layers, mlp remain frozen (in code: target_modules=["q_proj","v_proj"]).
+-----------------------------------------------------------------------------------------------------
+
+Inference:
+1) Accruracy@1 --> evaluated easily in the training notebook after training
+2) safety --> evaluated in local notebook, to do that, we create a new poi_id-location-hashmap: "poi_id_hashmap_after_reindexing.json", which helps map each predicted/Ground truth poi to its coordinates, this POI is of course after re-indexing the POI ids in the split stage, which is why we create a new hashmap to retrieve the correct location coordinates.
+
+Detailed Lab Report:
+
+1) Model Setup:
+We use a Llama-based model (e.g., "meta-llama/Llama-3.1-8B-Instruct") as the Base model.
+We load it in 4-bit precision (load_in_4bit=True) for memory efficiency, using bitsandbytes under the hood.
+
+2) LoRA (Low-Rank Adaptation):
+We apply PEFT (Parameter-Efficient Fine-Tuning) via lora_config = LoraConfig(...), which modifies only a small subset of parameters (rank decomposition in attention layers).
+This approach keeps the bulk of the model weights frozen and updates only the LoRA adapters, drastically reducing GPU memory usage and training time.
+
+3) Tokenization & Masking:
+We load the tokenizer (AutoTokenizer) and specify a max_length of 4096 tokens. The dataset (a list of complete question+answer strings) is tokenized in a batched manner using padding="longest".
+
+4) Teacher Forcing on Answers Only:
+We find the substring "<answer>:" in each example to identify where the answer begins.
+All tokens before this substring are part of the “question” and are assigned a label of -100 (so they do not contribute to the loss).
+Tokens after "<answer>:" remain as is, so their labels match their input IDs, meaning the cross-entropy loss is computed on these tokens only.
+
+5) Training & Optimization:
+Trainer and TrainingArguments: We use Hugging Face’s TrainingArguments and Trainer API.
+Key hyperparameters include: num_train_epochs=3, learning_rate=2e-5, per_device_train_batch_size=1 (with gradient_accumulation_steps=1),
+evaluation_strategy="epoch" to run validation at the end of each epoch, fp16=True to enable half-precision for efficiency
+
+6) Loss Function:
+Internally, cross-entropy is computed on each token that isn’t labeled -100. This means the model is only penalized for
+incorrect predictions in the “answer” region. The LoRA adapters receive gradient updates, while the main base model weights remain frozen.
+
+7) Checkpoints and Logging
+
+We periodically save model checkpoints (save_steps=500) and keep up to three recent ones (save_total_limit=3).
+Logs (loss, learning rate, etc.) are printed every logging_steps=50.
+
+8) Evaluation & Inference
+Validation: During training, validation is run at the end of each epoch.
+The same token masking approach is used for the validation set to measure the cross-entropy loss on the answer portion.
+
+9) Test Inference:
+After training completes, we load the LoRA-tuned model and generate text for each test prompt.
+We split the test prompt at "<answer>:" to isolate the question portion and feed it to the model.
+We then compare the predicted POI ID to the ground truth POI ID.
+
+Top-1 Accuracy:
+A helper function extracts the numeric POI ID from the model’s output text, then compares it to the gold POI ID.
+Accuracy = (# correct predictions) / (total test examples).
+
+Safety Analysis:
+We measure whether the safety injection changes the average route-safety of the predicted POIs (e.g., see if the model tends to pick “safer” routes more frequently).
+
