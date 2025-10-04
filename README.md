@@ -297,20 +297,6 @@ Datasets lacking POI categories automatically omit category phrases in prompts.
 | **CUDA OOM** | Reduce `max_length`, enable 4-bit (default), or increase `gradient_accumulation_steps` |
 | **Gated model access** | Ensure HF account has permissions; run `huggingface-cli login` |
 
----
-
-## 📄 Citation
-
-If you use this work in your research, please cite:
-
-```bibtex
-@article{yourname2025safety,
-  title={Leveraging Large Language Models for Safety-Aware Point-of-Interest Recommendations},
-  author={Your Name and Collaborators},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
-  year={2025}
-}
-```
 
 ---
 
