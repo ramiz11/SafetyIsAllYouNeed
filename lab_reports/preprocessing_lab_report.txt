@@ -13,10 +13,35 @@ Check-ins dataset preprocessing:
 
 Introduction to safety calculation:
 
-Normalized Safety Score = 1 - *normalized_crime_count
-*normalized_crime_count: go over each pair of consecutive POIS, count crimes in each route, then iterate over the same routes again, and perform *robust scaling: (crime_count_in_current_route - median_crime_count_in_all_routes) / IQR (IQR = Q3__of_crime_count_in_all_routes - Q1_of_crime_count_in_all_routes), given the normalized count of crimes, 1 - that score, is the normalized safety score.
-Safety calculation for validation and test trajectory follows the same principle, but it's more straightforward, as it divides the amount of crimes in a route between two consecutive pois by the crime count deduced in the training trajectories, so that the scaling will be done by the training parameters, avoiding data leakage.
-*why robust scaling? Dividing by the maximum crime count amongst all routes can squash typical values if there’s even a single extremely high outlier. Robust scaling, which uses the median and interquartile range, is less sensitive to these outliers. This makes it particularly effective for skewed distributions such as crime data. As a result, robust scaling preserves more meaningful distinctions among typical values while still keeping extreme counts in check.
+Normalized Safety Score = 1 - normalized_crime_count
+
+normalized_crime_count:
+We iterate over each pair of consecutive POIs, count the crimes along each route, and then normalize these per-route crime counts using a robust statistic, followed by clamping to [0,1].
+
+For the training trajectories, we compute:
+    - median_crime_count = median of crime_count over all routes
+    - IQR = Q3_of_crime_count_in_all_routes - Q1_of_crime_count_in_all_routes
+
+Then for each route with crime_count_i:
+    z_i = (crime_count_i - median_crime_count) / IQR
+    normalized_crime_count_i = clip(z_i, 0, 1)   # i.e., min(1.0, max(0.0, z_i))
+
+Given this normalized crime score in [0,1], the normalized safety score is:
+    SafetyScore_i = 1 - normalized_crime_count_i
+
+Safety calculation for validation and test trajectories follows the same principle, but the
+median_crime_count and IQR used in the formula are computed only from the training trajectories.
+This ensures that normalization is based on training statistics and avoids data leakage.
+
+Why robust scaling?
+Dividing by the maximum crime count amongst all routes can squash typical values if there’s even a
+single extremely high outlier. Robust scaling, which uses the median and interquartile range, is
+less sensitive to these outliers, making it particularly effective for skewed distributions such as
+crime data. Afterward, we clamp the robust-scaled values to [0,1], so values well below the median
+are treated as “safest” (0), values more than one IQR above the median are treated as “most risky”
+(1), and intermediate values are mapped smoothly in between. This preserves meaningful distinctions
+among typical routes while keeping extreme counts in check.
+
 
 Safety Injection:
 
