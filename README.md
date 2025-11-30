@@ -276,8 +276,10 @@ We provide **ready-to-use training, validation, and test trajectories** with saf
 - Customizable to city-specific projected CRS
 
 ### Safety Normalization
-- **Robust scaling:** `(x - median) / IQR`, clamped to [0,1]
-- **Safety score:** `1 - scaled_crime_count`
+- **Robust scaling + clamping:** For each route, crime counts are normalized as
+  `z = (x - median_train) / IQR_train`, then hard-clipped to the [0,1] range.
+- **Safety score:** `safety = 1 - scaled_crime_count`, so higher values indicate safer routes.
+
 
 ### Prompt Masking
 Training loss computed **only on answer span** (after `<answer>:` token).
