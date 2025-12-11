@@ -51,7 +51,6 @@ The pipeline is:
 
 **NYC:**
 - `complaint_date_start`, `complaint_date_end`
-- `LAW_CAT_CD`
 - `Latitude`, `Longitude`
 
 **Chicago:**
