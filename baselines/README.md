@@ -33,6 +33,13 @@ baselines/exports/
   category_map.json
 ```
 
+After exporting, you can use the helper scripts to copy files into each baseline repo:
+```bash
+scripts/run_stan.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/Spatial-Temporal-Attention-Network-for-POI-Recommendation NYC 20
+scripts/run_getnext.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/GETNext NYC
+scripts/run_sthgcn.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/Spatio-Temporal-Hypergraph-Model NYC
+```
+
 ## Notebooks
 
 The notebooks in `baselines/notebooks/` were originally run in Colab and include drive mounts. You can either adapt the paths to your local machine **or** use the exported files from `scripts/export_baseline_inputs.py` and follow the steps below.
