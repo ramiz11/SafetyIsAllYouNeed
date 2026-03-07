@@ -28,12 +28,13 @@ SAFETY_TEXTUAL_VALIDATION_TRAJS_JSON_PATH = None
 SAFETY_TEXTUAL_TEST_TRAJS_JSON_PATH = None
 TIME_SPLIT_RATIOS = {"train": 0.8, "validation": 0.1, "test": 0.1}
 OSRM_BASE_URL = "https://router.project-osrm.org/route/v1/walking"
-HERE_API_KEY = "q1R28qK2r82A3R4pQ9qZ1RcnJ_BnH-siOjOIrzYvYZU"
+# Optional: only needed if you use HERE APIs in your environment.
+HERE_API_KEY = os.getenv("HERE_API_KEY", "")
 TRAJ_TIME_THRESHOLD_HOURS = 24 # We want a high-time granularity
 
 
 def update_config(dataset_name: str, traj_len: int, crime_radius: int, crime_time_window: int,
-                  base_dir: str = '/Users/ramizaboura/MSC/SafetyIsAllYouNeed'):
+                  base_dir: str = '/absolute/path/to/SafetyIsAllYouNeed'):
     """
     dataset_name: "NYC" or "CHICAGO"
     """

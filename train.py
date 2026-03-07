@@ -125,7 +125,7 @@ def run_train(
     traj_len: int = 10, # or any other length
     crime_radius: int = 1000, # or any other length
     crime_time_weeks: int = 4, # or any other length
-    base_dir: str = "/Users/ramizaboura/MSC/SafetyIsAllYouNeed", # change to your own dir
+    base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed", # change to your own dir
     use_safety: bool = True, # or False
     prompt_prefix: str | None = None,
     # Model / tokenizer
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         traj_len=10,
         crime_radius=1000,
         crime_time_weeks=4,
-        base_dir="/Users/ramizaboura/MSC/SafetyIsAllYouNeed",
+        base_dir="/absolute/path/to/SafetyIsAllYouNeed",
         use_safety=True,
         model_name="meta-llama/Llama-3.1-8B-Instruct",
         max_length=2048,

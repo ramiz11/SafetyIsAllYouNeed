@@ -20,5 +20,8 @@ python baselines/llm4poi/run_llm4poi_baseline.py \
 > **Important:** `Llama-2-7b-longlora-32k` is a placeholder. Set `--model-name` to the exact HF checkpoint or local path you want reviewers to use.
 > This baseline does **not** implement the key‑query similarity module from LLM4POI.
 
+To reproduce the **LLM4POI‑3.1** baseline in this repo, run the same script with:
+`--model-name meta-llama/Llama-3.1-8B-Instruct`
+
 Optional:
 - `--max-hist-trajs N` limits same‑user historical trajectories (0 = all).

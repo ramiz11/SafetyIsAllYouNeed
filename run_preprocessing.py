@@ -10,7 +10,7 @@ import text_utils as tu
 
 
 def main(dataset: str = "NYC", traj_len: int = 10, crime_radius: int = 500, crime_time_weeks: int = 4,
-    base_dir: str = "/Users/ramizaboura/MSC/SafetyIsAllYouNeed"):
+    base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed"):
     pc.update_config(dataset, traj_len, crime_radius, crime_time_weeks, base_dir=base_dir)
     start = time.time()
     print(f"Run with: dataset={pc.DATASET}, traj_len={pc.TRAJ_LENGTH}, radius={pc.CRIME_RADIUS}m, time_window={pc.CRIME_TIME_WINDOW}w")

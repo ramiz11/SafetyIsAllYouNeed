@@ -145,7 +145,7 @@ Generates trajectories, caches OSRM routes, computes crime counts, and builds te
 - `safety/safety_textual_{train,val,test}_trajs.json`
 
 ```python
-from run_processing import main
+from run_preprocessing import main
 
 main(
     dataset="NYC",
@@ -254,7 +254,7 @@ See `baselines/README.md` for STAN / GETNext / STHGCN instructions and notes.
 Grid search over hyperparameters:
 
 ```python
-from run_processing import main
+from run_preprocessing import main
 from train import run_train
 from eval import run_eval
 

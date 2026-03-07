@@ -88,7 +88,7 @@ def _load_text_prompts(train_json: str, val_json: str, test_json: str):
 
 def _load_numeric_trajectories():
     """
-    Load numeric trajectories (with safety) produced by run_processing.py.
+    Load numeric trajectories (with safety) produced by run_preprocessing.py.
     Used to build POI-> (lat, lon) hashmap and to get GT timestamps.
     """
     with open(pc.TRAIN_TRAJS_WITH_SAFETY_PKL_PATH, "rb") as f:
@@ -291,7 +291,7 @@ def run_eval(
     traj_len: int = 10,
     crime_radius: int = 1000,
     crime_time_weeks: int = 4,
-    base_dir: str = "/Users/ramizaboura/MSC/SafetyIsAllYouNeed",
+    base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed",
     use_safety: bool = True,
     prompt_prefix: Optional[str] = None,
     # Model
@@ -398,7 +398,7 @@ if __name__ == "__main__":
         traj_len=10,
         crime_radius=1000,
         crime_time_weeks=4,
-        base_dir="/Users/ramizaboura/MSC/SafetyIsAllYouNeed",
+        base_dir="/absolute/path/to/SafetyIsAllYouNeed",
         use_safety=True,
         model_name="meta-llama/Llama-3.1-8B-Instruct",
         max_new_tokens=128,
