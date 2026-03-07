@@ -217,6 +217,38 @@ Also outputs `pandas.Series.describe()` of per-route safety scores (normalized [
 
 ---
 
+### 4. Baselines
+
+This repository also includes baseline implementations under `baselines/` and a helper
+script to export baseline-specific inputs.
+
+```bash
+python scripts/export_baseline_inputs.py \
+  --dataset NYC \
+  --traj-len 20 \
+  --crime-radius 500 \
+  --crime-time-weeks 4 \
+  --base-dir /absolute/path/to/SafetyIsAllYouNeed \
+  --baseline all
+```
+
+LLM4POI (pre‑3.1) baseline:
+
+```bash
+python baselines/llm4poi/run_llm4poi_baseline.py \
+  --mode both \
+  --dataset NYC \
+  --traj-len 20 \
+  --crime-radius 500 \
+  --crime-time-weeks 4 \
+  --base-dir /absolute/path/to/SafetyIsAllYouNeed \
+  --model-name Llama-2-7b-longlora-32k
+```
+
+See `baselines/README.md` for STAN / GETNext / STHGCN instructions and notes.
+
+---
+
 ### Batch Experiments
 
 Grid search over hyperparameters:

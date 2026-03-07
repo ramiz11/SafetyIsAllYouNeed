@@ -27,12 +27,18 @@ from peft import LoraConfig, get_peft_model
 from configs import preprocessing_config as pc
 
 
-def _resolve_prompt_paths(use_safety: bool) -> Tuple[str, str, str]:
+def _resolve_prompt_paths(use_safety: bool, prompt_prefix: str | None = None) -> Tuple[str, str, str]:
     """
-    Return (train_json, val_json, test_json) absolute paths for prompt files,
-    picking from CURRENT_DATA_DIR or SAFETY_DATA_DIR as appropriate.
+    Return (train_json, val_json, test_json) absolute paths for prompt files.
+    - If prompt_prefix is provided, load `{prefix}_{split}_trajs.json` from CURRENT_DATA_DIR.
+    - Otherwise, choose safety vs non-safety defaults.
     """
-    if use_safety:
+    if prompt_prefix:
+        data_dir = pc.CURRENT_DATA_DIR
+        train_json = os.path.join(data_dir, f"{prompt_prefix}_train_trajs.json")
+        val_json = os.path.join(data_dir, f"{prompt_prefix}_validation_trajs.json")
+        test_json = os.path.join(data_dir, f"{prompt_prefix}_test_trajs.json")
+    elif use_safety:
         data_dir = pc.SAFETY_DATA_DIR
         train_json = os.path.join(data_dir, "safety_textual_train_trajs.json")
         val_json = os.path.join(data_dir, "safety_textual_validation_trajs.json")
@@ -121,6 +127,7 @@ def run_train(
     crime_time_weeks: int = 4, # or any other length
     base_dir: str = "/Users/ramizaboura/MSC/SafetyIsAllYouNeed", # change to your own dir
     use_safety: bool = True, # or False
+    prompt_prefix: str | None = None,
     # Model / tokenizer
     model_name: str = "meta-llama/Llama-3.1-8B-Instruct",
     use_4bit: bool = True,
@@ -150,7 +157,7 @@ def run_train(
     # Config paths for this dataset/hparam combo
     pc.update_config(dataset, traj_len, crime_radius, crime_time_weeks, base_dir=base_dir)
     # Locate training files
-    train_json, val_json, test_json = _resolve_prompt_paths(use_safety)
+    train_json, val_json, test_json = _resolve_prompt_paths(use_safety, prompt_prefix=prompt_prefix)
     train_ds, val_ds, test_ds = _load_hf_datasets(train_json, val_json, test_json)
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)

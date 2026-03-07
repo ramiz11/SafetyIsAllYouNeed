@@ -50,10 +50,17 @@ def _scope_model_dir(base_dir: str, model_name: str, use_safety: bool) -> str:
     )
 
 
-def _resolve_prompt_paths(use_safety: bool) -> Tuple[str, str, str]:
+def _resolve_prompt_paths(use_safety: bool, prompt_prefix: Optional[str] = None) -> Tuple[str, str, str]:
     """
-    Return (train_json, val_json, test_json) based on safety toggle.
+    Return (train_json, val_json, test_json) based on safety toggle or a custom prefix.
     """
+    if prompt_prefix:
+        data_dir = pc.CURRENT_DATA_DIR
+        return (
+            os.path.join(data_dir, f"{prompt_prefix}_train_trajs.json"),
+            os.path.join(data_dir, f"{prompt_prefix}_validation_trajs.json"),
+            os.path.join(data_dir, f"{prompt_prefix}_test_trajs.json"),
+        )
     if use_safety:
         data_dir = pc.SAFETY_DATA_DIR
         return (
@@ -61,13 +68,12 @@ def _resolve_prompt_paths(use_safety: bool) -> Tuple[str, str, str]:
             os.path.join(data_dir, "safety_textual_validation_trajs.json"),
             os.path.join(data_dir, "safety_textual_test_trajs.json"),
         )
-    else:
-        data_dir = pc.CURRENT_DATA_DIR
-        return (
-            os.path.join(data_dir, "textual_train_trajs.json"),
-            os.path.join(data_dir, "textual_validation_trajs.json"),
-            os.path.join(data_dir, "textual_test_trajs.json"),
-        )
+    data_dir = pc.CURRENT_DATA_DIR
+    return (
+        os.path.join(data_dir, "textual_train_trajs.json"),
+        os.path.join(data_dir, "textual_validation_trajs.json"),
+        os.path.join(data_dir, "textual_test_trajs.json"),
+    )
 
 
 def _load_text_prompts(train_json: str, val_json: str, test_json: str):
@@ -287,6 +293,7 @@ def run_eval(
     crime_time_weeks: int = 4,
     base_dir: str = "/Users/ramizaboura/MSC/SafetyIsAllYouNeed",
     use_safety: bool = True,
+    prompt_prefix: Optional[str] = None,
     # Model
     model_name: str = "meta-llama/Llama-3.1-8B-Instruct",
     use_4bit: bool = True,
@@ -303,7 +310,7 @@ def run_eval(
     # Configure paths
     pc.update_config(dataset, traj_len, crime_radius, crime_time_weeks, base_dir=base_dir)
     # Load prompts
-    train_json, val_json, test_json = _resolve_prompt_paths(use_safety)
+    train_json, val_json, test_json = _resolve_prompt_paths(use_safety, prompt_prefix=prompt_prefix)
     _, _, test_texts = _load_text_prompts(train_json, val_json, test_json)
     # Load numeric trajectories for POI map & timestamps
     train_trajs, val_trajs, test_trajs = _load_numeric_trajectories()
