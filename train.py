@@ -13,8 +13,10 @@ Notes
 import os
 import json
 import shutil
+import random
 from typing import Iterable, Tuple
 import torch
+import numpy as np
 from datasets import Dataset
 from transformers import (
     AutoTokenizer,
@@ -25,6 +27,18 @@ from transformers import (
 )
 from peft import LoraConfig, get_peft_model
 from configs import preprocessing_config as pc
+
+
+def _set_seed(seed: int):
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    # Best-effort determinism (may impact throughput; some ops are still nondeterministic)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def _resolve_prompt_paths(use_safety: bool, prompt_prefix: str | None = None) -> Tuple[str, str, str]:
@@ -128,6 +142,7 @@ def run_train(
     base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed", # change to your own dir
     use_safety: bool = True, # or False
     prompt_prefix: str | None = None,
+    seed: int | None = 42,
     # Model / tokenizer
     model_name: str = "meta-llama/Llama-3.1-8B-Instruct",
     use_4bit: bool = True,
@@ -154,6 +169,8 @@ def run_train(
     """
     Single training run with the given hyperparameters.
     """
+    if seed is not None:
+        _set_seed(int(seed))
     # Config paths for this dataset/hparam combo
     pc.update_config(dataset, traj_len, crime_radius, crime_time_weeks, base_dir=base_dir)
     # Locate training files

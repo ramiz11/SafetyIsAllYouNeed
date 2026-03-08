@@ -318,6 +318,8 @@ Training loss computed **only on answer span** (after `<answer>:` token).
 ### Category Handling
 Datasets lacking POI categories automatically omit category phrases in prompts.
 
+**Note (Chicago semantics):** the Gowalla Chicago check-ins do not include POI categories. This repo therefore trains/evaluates Chicago prompts without category text. If you want to enrich Chicago POIs with OpenStreetMap-derived categories (as discussed in the paper’s qualitative analysis), that enrichment step is not implemented in the preprocessing pipeline here.
+
 ---
 ## 📊 Results
 
