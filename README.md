@@ -129,6 +129,8 @@ pc.update_config(
 data/NYC_checkins/traj_len-15/crime_radius-250m/crime_time-4w/
 ```
 
+Artifacts written under `data/{CITY}_checkins/...` are derived joint outputs: they start from check-in data and are augmented during preprocessing with crime-based route counts, normalized safety scores, and textual safety-aware trajectory prompts.
+
 ---
 
 ## 🔧 Usage
@@ -143,6 +145,8 @@ Generates trajectories, caches OSRM routes, computes crime counts, and builds te
 - `segments_crimes_count_hashmap.json`
 - `textual_{train,val,test}_trajs.json`
 - `safety/safety_textual_{train,val,test}_trajs.json`
+
+These generated files should be interpreted as joint mobility-safety artifacts rather than raw check-in exports: they combine user trajectories with crime-derived route statistics and safety annotations computed during preprocessing.
 
 ```python
 from run_preprocessing import main
