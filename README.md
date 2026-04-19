@@ -59,6 +59,10 @@ The pipeline is:
 
 > All timestamps are localized to city timezone, then converted to UTC (`crime_start_utc`, `crime_end_utc`).
 
+## Data Attribution
+
+This repository does not claim ownership of the original check-in or crime datasets. The NYC mobility data is based on the publicly released Foursquare TSMC2014 NYC dataset (see `data/NYC_checkins/raw/dataset_TSMC2014_readme.txt`), and the Chicago mobility data is based on the public Gowalla check-in dataset filtered to the Chicago area (source link documented in `data/Chicago_checkins/README.txt`: https://snap.stanford.edu/data/loc-gowalla.html). The Chicago crime source link is documented in `data/Chicago_checkins/README.txt`, and the aligned crime preprocessing notes are documented in `data/Chicago_CrimeData/README.txt`; the NYC aligned crime preprocessing notes are documented in `data/NYPD_CrimeData/README.txt`. The contribution of this repository is the integration pipeline that filters, aligns, joins, and annotates these public datasets with route-level crime counts and normalized safety scores. Use of upstream datasets remains subject to their original licenses, terms of use, and citation requirements.
+
 ---
 
 ## 🚀 Installation
