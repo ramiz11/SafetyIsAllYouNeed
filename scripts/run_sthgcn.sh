@@ -3,7 +3,7 @@ set -euo pipefail
 
 BASE_DIR="${1:-/absolute/path/to/SafetyIsAllYouNeed}"
 STHGCN_REPO_DIR="${2:-/absolute/path/to/Spatio-Temporal-Hypergraph-Model}"
-DATASET="${3:-NYC}"
+DATASET="${3:-CHICAGO}"
 
 EXPORT_DIR="$BASE_DIR/baselines/exports/sthgcn"
 TRAIN_SRC="$EXPORT_DIR/${DATASET}_train.tsv"

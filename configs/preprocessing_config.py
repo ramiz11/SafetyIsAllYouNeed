@@ -1,10 +1,10 @@
 import os
 
-TRAJ_LENGTH = None
-CRIME_RADIUS = None
-CRIME_TIME_WINDOW = None
-DATASET = None # "NYC" or "CHICAGO", configure during runtime.
-CITY_TZ = None  # "America/New_York" | "America/Chicago"
+TRAJ_LENGTH = 20
+CRIME_RADIUS = 1000
+CRIME_TIME_WINDOW = 3
+DATASET = "CHICAGO" # "NYC" or "CHICAGO", configure during runtime.
+CITY_TZ = "America/Chicago"  # "America/New_York" | "America/Chicago"
 PROJ_CRS_EPSG = 3857 # meter-based CRS (good enough for 0.1–2km buffers)
 CRIME_CSV = None
 CHECKINS_CSV = None

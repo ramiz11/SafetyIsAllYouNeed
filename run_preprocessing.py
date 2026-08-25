@@ -10,7 +10,7 @@ import safety as sf
 import text_utils as tu
 
 
-def main(dataset: str = "NYC", traj_len: int = 10, crime_radius: int = 500, crime_time_weeks: int = 4,
+def main(dataset: str = "CHICAGO", traj_len: int = 20, crime_radius: int = 1000, crime_time_weeks: int = 3,
     base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed"):
     pc.update_config(dataset, traj_len, crime_radius, crime_time_weeks, base_dir=base_dir)
     start = time.time()
@@ -214,10 +214,10 @@ def main(dataset: str = "NYC", traj_len: int = 10, crime_radius: int = 500, crim
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="NYC", choices=["NYC", "CHICAGO"])
+    parser.add_argument("--dataset", default="CHICAGO", choices=["NYC", "CHICAGO"])
     parser.add_argument("--traj_len", type=int, default=10)
-    parser.add_argument("--crime_radius", type=int, default=500)
-    parser.add_argument("--crime_time_weeks", type=int, default=4)
+    parser.add_argument("--crime_radius", type=int, default=1000)
+    parser.add_argument("--crime_time_weeks", type=int, default=3)
     parser.add_argument("--base_dir", default="/absolute/path/to/SafetyIsAllYouNeed")
     args = parser.parse_args()
 

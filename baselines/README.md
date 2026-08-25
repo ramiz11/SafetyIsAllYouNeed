@@ -21,10 +21,10 @@ All baselines consume different input formats. Use the export script to convert 
 
 ```bash
 python scripts/export_baseline_inputs.py \
-  --dataset NYC \
+  --dataset CHICAGO \
   --traj-len 20 \
-  --crime-radius 500 \
-  --crime-time-weeks 4 \
+  --crime-radius 1000 \
+  --crime-time-weeks 3 \
   --base-dir /absolute/path/to/SafetyIsAllYouNeed \
   --baseline all
 ```
@@ -32,17 +32,17 @@ python scripts/export_baseline_inputs.py \
 Outputs are written under:
 ```
 baselines/exports/
-  stan/nyc_len20/{train,val,test}.txt
-  getnext/NYC_{train,val,test}.csv
-  sthgcn/NYC_{train,val,test}.tsv
+  stan/chicago_len20/{train,val,test}.txt
+  getnext/CHICAGO_{train,val,test}.csv
+  sthgcn/CHICAGO_{train,val,test}.tsv
   category_map.json
 ```
 
 After exporting, you can use the helper scripts to copy files into each baseline repo:
 ```bash
-scripts/run_stan.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/Spatial-Temporal-Attention-Network-for-POI-Recommendation NYC 20
-scripts/run_getnext.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/GETNext NYC
-scripts/run_sthgcn.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/Spatio-Temporal-Hypergraph-Model NYC
+scripts/run_stan.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/Spatial-Temporal-Attention-Network-for-POI-Recommendation CHICAGO 20
+scripts/run_getnext.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/GETNext CHICAGO
+scripts/run_sthgcn.sh /absolute/path/to/SafetyIsAllYouNeed /absolute/path/to/Spatio-Temporal-Hypergraph-Model CHICAGO
 ```
 
 ## Notebooks (legacy / reference)
@@ -79,10 +79,10 @@ This wrapper implements the **limited-history** variant (same-user history only;
 python baselines/lstm_gru/run_lstm_gru.py \
   --model lstm \
   --mode both \
-  --dataset NYC \
+  --dataset CHICAGO \
   --traj-len 20 \
-  --crime-radius 500 \
-  --crime-time-weeks 4 \
+  --crime-radius 1000 \
+  --crime-time-weeks 3 \
   --base-dir /absolute/path/to/SafetyIsAllYouNeed
 ```
 

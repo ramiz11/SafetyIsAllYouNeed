@@ -3,7 +3,7 @@ set -euo pipefail
 
 BASE_DIR="${1:-/absolute/path/to/SafetyIsAllYouNeed}"
 GETNEXT_REPO_DIR="${2:-/absolute/path/to/GETNext}"
-DATASET="${3:-NYC}"
+DATASET="${3:-CHICAGO}"
 
 EXPORT_DIR="$BASE_DIR/baselines/exports/getnext"
 TRAIN_SRC="$EXPORT_DIR/${DATASET}_train.csv"

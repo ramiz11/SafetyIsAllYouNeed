@@ -108,10 +108,10 @@ All settings are centralized in `configs/preprocessing_config.py`.
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `DATASET` | City selection | `"NYC"` or `"CHICAGO"` |
-| `TRAJ_LENGTH` | Trajectory window size | `15` |
-| `CRIME_RADIUS` | Spatial buffer (meters) | `250` |
-| `CRIME_TIME_WINDOW` | Temporal window (weeks) | `4` |
+| `DATASET` | City selection | `"CHICAGO"` (default) or `"NYC"` |
+| `TRAJ_LENGTH` | Trajectory window size | `20` |
+| `CRIME_RADIUS` | Spatial buffer (meters) | `1000` |
+| `CRIME_TIME_WINDOW` | Temporal window (weeks) | `3` |
 | `CITY_TZ` | Auto-handled per dataset | — |
 
 ### Setting Configuration
@@ -120,17 +120,17 @@ All settings are centralized in `configs/preprocessing_config.py`.
 from configs import preprocessing_config as pc
 
 pc.update_config(
-    dataset_name="NYC",
-    traj_len=15,
-    crime_radius=250,
-    crime_time_window=4,
+    dataset_name="CHICAGO",
+    traj_len=20,
+    crime_radius=1000,
+    crime_time_window=3,
     base_dir="/absolute/path/to/SafetyIsAllYouNeed"
 )
 ```
 
 **Output directory structure:**
 ```
-data/NYC_checkins/traj_len-15/crime_radius-250m/crime_time-4w/
+data/Chicago_checkins/traj_len-20/crime_radius-1000m/crime_time-3w/
 ```
 
 Artifacts written under `data/{CITY}_checkins/...` are derived joint outputs: they start from check-in data and are augmented during preprocessing with crime-based route counts, normalized safety scores, and textual safety-aware trajectory prompts.
@@ -156,10 +156,10 @@ These generated files should be interpreted as joint mobility-safety artifacts r
 from run_preprocessing import main
 
 main(
-    dataset="NYC",
+    dataset="CHICAGO",
     traj_len=20,
     crime_radius=1000,  # meters
-    crime_time_weeks=4,
+    crime_time_weeks=3,
     base_dir="/absolute/path/to/SafetyIsAllYouNeed",
 )
 ```
@@ -181,10 +181,10 @@ models/{DATASET}/traj_len-XX/crime_radius-YYm/crime_time-ZZw/{model}_{w|wo}_safe
 from train import run_train
 
 run_train(
-    dataset="NYC",
-    traj_len=10,
+    dataset="CHICAGO",
+    traj_len=20,
     crime_radius=1000,
-    crime_time_weeks=4,
+    crime_time_weeks=3,
     base_dir="/absolute/path/to/SafetyIsAllYouNeed",
     use_safety=True,  # True = safety_textual_*.json
     model_name="meta-llama/Llama-3.1-8B-Instruct",
@@ -210,10 +210,10 @@ Computes accuracy metrics (Acc@1/3/5, MRR) and inference-time route safety analy
 from eval import run_eval
 
 metrics = run_eval(
-    dataset="NYC",
-    traj_len=10,
+    dataset="CHICAGO",
+    traj_len=20,
     crime_radius=1000,
-    crime_time_weeks=4,
+    crime_time_weeks=3,
     base_dir="/absolute/path/to/SafetyIsAllYouNeed",
     use_safety=True,
 )
@@ -232,10 +232,10 @@ script to export baseline-specific inputs.
 
 ```bash
 python scripts/export_baseline_inputs.py \
-  --dataset NYC \
+  --dataset CHICAGO \
   --traj-len 20 \
-  --crime-radius 500 \
-  --crime-time-weeks 4 \
+  --crime-radius 1000 \
+  --crime-time-weeks 3 \
   --base-dir /absolute/path/to/SafetyIsAllYouNeed \
   --baseline all
 ```
@@ -245,10 +245,10 @@ LLM4POI (pre‑3.1) baseline:
 ```bash
 python baselines/llm4poi/run_llm4poi_baseline.py \
   --mode both \
-  --dataset NYC \
+  --dataset CHICAGO \
   --traj-len 20 \
-  --crime-radius 500 \
-  --crime-time-weeks 4 \
+  --crime-radius 1000 \
+  --crime-time-weeks 3 \
   --base-dir /absolute/path/to/SafetyIsAllYouNeed \
   --model-name Llama-2-7b-longlora-32k
 ```
@@ -266,7 +266,7 @@ from run_preprocessing import main
 from train import run_train
 from eval import run_eval
 
-DATASET = "NYC"
+DATASET = "CHICAGO"
 BASE = "/absolute/path/to/SafetyIsAllYouNeed"
 
 for traj_len in [10, 15, 20, 25]:

@@ -9,10 +9,10 @@ It follows the **limited‑history variant described in our paper** (historical 
 ```bash
 python baselines/llm4poi/run_llm4poi_baseline.py \
   --mode both \
-  --dataset NYC \
+  --dataset CHICAGO \
   --traj-len 20 \
-  --crime-radius 500 \
-  --crime-time-weeks 4 \
+  --crime-radius 1000 \
+  --crime-time-weeks 3 \
   --base-dir /absolute/path/to/SafetyIsAllYouNeed \
   --model-name Llama-2-7b-longlora-32k
 ```

@@ -135,10 +135,10 @@ def make_tokenize_and_mask_fn(tokenizer, max_length: int):
 
 def run_train(
     *,
-    dataset: str = "NYC", # or "CHICAGO"
-    traj_len: int = 10, # or any other length
+    dataset: str = "CHICAGO", # or "NYC"
+    traj_len: int = 20, # or any other length
     crime_radius: int = 1000, # or any other length
-    crime_time_weeks: int = 4, # or any other length
+    crime_time_weeks: int = 3, # or any other length
     base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed", # change to your own dir
     use_safety: bool = True, # or False
     prompt_prefix: str | None = None,
@@ -269,10 +269,10 @@ if __name__ == "__main__":
     ## Configure (change config of) dataset, base directory, and trajectory related hyperparameters here.
     ## For reproducibility, keep the remaining training settings unchanged to match our best results.
     run_train(
-        dataset="NYC",
-        traj_len=10,
+        dataset="CHICAGO",
+        traj_len=20,
         crime_radius=1000,
-        crime_time_weeks=4,
+        crime_time_weeks=3,
         base_dir="/absolute/path/to/SafetyIsAllYouNeed",
         use_safety=True,
         model_name="meta-llama/Llama-3.1-8B-Instruct",

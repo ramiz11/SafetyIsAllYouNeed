@@ -182,10 +182,10 @@ def dump_sthg(trajs, out_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', default='NYC', choices=['NYC','CHICAGO'])
+    parser.add_argument('--dataset', default='CHICAGO', choices=['NYC','CHICAGO'])
     parser.add_argument('--traj-len', type=int, default=20)
-    parser.add_argument('--crime-radius', type=int, default=500)
-    parser.add_argument('--crime-time-weeks', type=int, default=4)
+    parser.add_argument('--crime-radius', type=int, default=1000)
+    parser.add_argument('--crime-time-weeks', type=int, default=3)
     parser.add_argument('--base-dir', default=str(Path(__file__).resolve().parents[1]))
     parser.add_argument('--out-dir', default=None)
     parser.add_argument('--baseline', default='all', choices=['all','stan','getnext','sthgcn'])

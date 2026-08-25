@@ -3,7 +3,7 @@ set -euo pipefail
 
 BASE_DIR="${1:-/absolute/path/to/SafetyIsAllYouNeed}"
 STAN_REPO_DIR="${2:-/absolute/path/to/Spatial-Temporal-Attention-Network-for-POI-Recommendation}"
-DATASET="${3:-NYC}"
+DATASET="${3:-CHICAGO}"
 TRAJ_LEN="${4:-20}"
 
 dataset_lc=$(echo "$DATASET" | tr '[:upper:]' '[:lower:]')

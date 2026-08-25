@@ -130,10 +130,10 @@ def build_prompts_for_split(trajs, user_hist_map, poi_id_range, cat_map, max_his
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "eval", "both"], default="both")
-    parser.add_argument("--dataset", default="NYC")
+    parser.add_argument("--dataset", default="CHICAGO")
     parser.add_argument("--traj-len", type=int, default=20)
-    parser.add_argument("--crime-radius", type=int, default=500)
-    parser.add_argument("--crime-time-weeks", type=int, default=4)
+    parser.add_argument("--crime-radius", type=int, default=1000)
+    parser.add_argument("--crime-time-weeks", type=int, default=3)
     parser.add_argument("--base-dir", default="/absolute/path/to/SafetyIsAllYouNeed")
     # LLM4POI baseline model (as in LLM4POI paper)
     parser.add_argument("--model-name", default="Llama-2-7b-longlora-32k")

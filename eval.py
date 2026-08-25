@@ -287,10 +287,10 @@ def _inference_safety_summary(
 def run_eval(
     *,
     # trajectory hyperparams (change to any permutation)
-    dataset: str = "NYC",
-    traj_len: int = 10,
+    dataset: str = "CHICAGO",
+    traj_len: int = 20,
     crime_radius: int = 1000,
-    crime_time_weeks: int = 4,
+    crime_time_weeks: int = 3,
     base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed",
     use_safety: bool = True,
     prompt_prefix: Optional[str] = None,
@@ -394,10 +394,10 @@ def run_eval(
 if __name__ == "__main__":
     # change trajectory hyperparams to any permutation
     metrics = run_eval(
-        dataset="NYC",
-        traj_len=10,
+        dataset="CHICAGO",
+        traj_len=20,
         crime_radius=1000,
-        crime_time_weeks=4,
+        crime_time_weeks=3,
         base_dir="/absolute/path/to/SafetyIsAllYouNeed",
         use_safety=True,
         model_name="meta-llama/Llama-3.1-8B-Instruct",
