@@ -323,6 +323,8 @@ We provide **ready-to-use training, validation, and test trajectories** with saf
 ### Prompt Masking
 Training loss computed **only on answer span** (after `<answer>:` token).
 
+Test prompts include route-safety scores only for transitions between observed check-ins. The transition to the POI being predicted is not included in the prompt.
+
 ### Category Handling
 Datasets lacking POI categories automatically omit category phrases in prompts.
 

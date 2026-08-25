@@ -1,5 +1,5 @@
 import run_preprocessing as main_pipeline
-dataset = 'CHICAGO' # 'NYC'
+dataset = 'NYC' # 'CHICAGO'
 for traj_len in [25, 20, 150, 10]:
     for radius in [1000, 750, 500, 250]:
         for time_window in [4, 3, 2, 1]:

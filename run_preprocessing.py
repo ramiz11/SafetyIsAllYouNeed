@@ -171,12 +171,22 @@ def main(dataset: str = "NYC", traj_len: int = 10, crime_radius: int = 500, crim
     print("Created textual prompts at:", pc.TEXTUAL_TRAIN_TRAJS_JSON_PATH, pc.TEXTUAL_VALIDATION_TRAJS_JSON_PATH, pc.TEXTUAL_TEST_TRAJS_JSON_PATH)
 
     # Inject pre-calculated safety into textual trajectories
-    def finalize_textual_trajectories(textual_trajectories, numeric_safety_trajectories, out_path):
+    def finalize_textual_trajectories(
+        textual_trajectories,
+        numeric_safety_trajectories,
+        out_path,
+        observed_history_only=False,
+    ):
         texts = []
         for i, prompt_text in enumerate(textual_trajectories):
             safety_scores = list(numeric_safety_trajectories[i].normalized_safety)
+            if observed_history_only:
+                observed_transition_count = max(0, len(numeric_safety_trajectories[i]) - 2)
+                safety_scores = safety_scores[:observed_transition_count]
             safety_prompt_text = tu.inject_pre_cacl_safety_scores_to_prompt(
-                prompt_text=prompt_text, safety_scores=safety_scores
+                prompt_text=prompt_text,
+                safety_scores=safety_scores,
+                allow_sentence_terminal_id=observed_history_only,
             )
             texts.append(safety_prompt_text)
         with open(out_path, 'w') as f:
@@ -188,7 +198,12 @@ def main(dataset: str = "NYC", traj_len: int = 10, crime_radius: int = 500, crim
     if not os.path.exists(pc.SAFETY_TEXTUAL_VALIDATION_TRAJS_JSON_PATH):
         finalize_textual_trajectories(validation_textual_trajectories, validation_trajs_with_safety, pc.SAFETY_TEXTUAL_VALIDATION_TRAJS_JSON_PATH)
     if not os.path.exists(pc.SAFETY_TEXTUAL_TEST_TRAJS_JSON_PATH):
-        finalize_textual_trajectories(test_textual_trajectories, test_trajs_with_safety, pc.SAFETY_TEXTUAL_TEST_TRAJS_JSON_PATH)
+        finalize_textual_trajectories(
+            test_textual_trajectories,
+            test_trajs_with_safety,
+            pc.SAFETY_TEXTUAL_TEST_TRAJS_JSON_PATH,
+            observed_history_only=True,
+        )
 
     end = time.time()
     print("Created textual prompts with safety at:",
