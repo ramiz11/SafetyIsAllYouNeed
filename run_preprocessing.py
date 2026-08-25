@@ -186,7 +186,6 @@ def main(dataset: str = "NYC", traj_len: int = 10, crime_radius: int = 500, crim
             safety_prompt_text = tu.inject_pre_cacl_safety_scores_to_prompt(
                 prompt_text=prompt_text,
                 safety_scores=safety_scores,
-                allow_sentence_terminal_id=observed_history_only,
             )
             texts.append(safety_prompt_text)
         with open(out_path, 'w') as f:

@@ -137,7 +137,6 @@ def build_prompt(traj: pd.DataFrame, userid: int, poi_id_range: int, location2ad
 def inject_pre_cacl_safety_scores_to_prompt(
     prompt_text: str,
     safety_scores: list[float],
-    allow_sentence_terminal_id: bool = False,
 ) -> str:
     """
     Inject safety lines after each 'At ... visited POI id X' line.
@@ -145,11 +144,7 @@ def inject_pre_cacl_safety_scores_to_prompt(
     """
     lines = prompt_text.split("\n")
     new_lines = []
-    poi_pattern = re.compile(
-        r"visited POI id\s+(\d+)(?:\s+|(?=[.,!?]|$))"
-        if allow_sentence_terminal_id
-        else r"visited POI id\s+(\d+)\s+"
-    )
+    poi_pattern = re.compile(r"visited POI id\s+(\d+)(?:\s+|(?=[.,!?]|$))")
 
     score_index = 0
     for line in lines:
