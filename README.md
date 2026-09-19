@@ -2,7 +2,7 @@
 
 > Leveraging Large Language Models for next-visit prediction using safety-augmented trajectories derived from historical crime data
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch&logoColor=white)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -19,13 +19,9 @@ The pipeline is:
 
 **Pipeline:** `Preprocessing → Prompt Generation → LoRA Fine-tuning → Evaluation`
 
-> **Reproduce the six LLM configurations:** follow [REPRODUCING.md](REPRODUCING.md).
-> The supported path is `scripts/reproduce_coordinate_pairs_v2.py`: verify the
-> coordinate-bearing data, train your own LoRA adapters, run inference, and
-> evaluate. No trained weights or private
-> downloads are supplied. Reference results approximately match the paper;
-> fresh training may differ. The generic APIs below remain available for other
-> experiments and are not substitutes for this configured six-row workflow.
+The commands below train and evaluate the six LLM configurations. Users train
+their own models; no trained weights or private downloads are supplied.
+Previously measured results approximately match the paper; fresh training may differ.
 
 ---
 
@@ -76,43 +72,45 @@ This repository does not claim ownership of the original check-in or crime datas
 ## 🚀 Installation
 
 ### Prerequisites
-- Python 3.10+
-- CUDA-capable GPU (recommended)
+- Linux, Python 3.11 or 3.12, and a CUDA-capable GPU for training and inference
+- Git LFS and storage for the data, base models, and training checkpoints
 
 ### Step 1: Create Environment
 
 ```bash
-conda create -n poi_env python=3.10 -y
+conda create -n poi_env python=3.11 -y
 conda activate poi_env
 ```
 
-### Step 2: Install Geo Stack
+### Step 2: Download Data
 
 ```bash
-conda install -c conda-forge geopandas shapely pyproj rtree -y
+git lfs install
+git lfs pull
 ```
 
-### Step 3: Install ML Dependencies
+### Step 3: Install Dependencies
 
 ```bash
-pip install pandas numpy tqdm requests
-pip install torch --index-url https://download.pytorch.org/whl/cu121  # Adjust for your CUDA version
-pip install transformers accelerate peft datasets bitsandbytes huggingface_hub
+python -m pip install \
+  --index-url https://download.pytorch.org/whl/cu128 \
+  --extra-index-url https://pypi.org/simple \
+  -r requirements/training.txt
 ```
 
 ### Step 4: Authenticate with Hugging Face (for gated models)
 
 ```bash
-huggingface-cli login
+hf auth login
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-General preprocessing settings live in `configs/preprocessing_config.py`.
-The six-row reproduction recipe uses `configs/coordinate_pairs_v2.json`;
-follow [REPRODUCING.md](REPRODUCING.md) for its training and scoring settings.
+Preprocessing settings and the six LLM configurations (`MODEL_CONFIG`) live in
+`configs/preprocessing_config.py`. Accept the applicable Hugging Face licenses
+for the configured Llama-3.1 and Llama-2/LongLoRA base models before training.
 
 ### Key Parameters
 
@@ -163,6 +161,18 @@ Generates trajectories, caches OSRM routes, computes crime counts, and builds te
 The default prompt format includes observed latitude/longitude pairs. Regenerating
 prompts updates these canonical textual files.
 
+For the supplied optimal NYC and Chicago datasets, verify the inputs or regenerate
+only their prompts without rebuilding routes or crime counts:
+
+```bash
+python batch_runner.py check
+python batch_runner.py prompts
+```
+
+Each input contains 19 observed check-ins with their own coordinates; the 20th
+POI is the training answer. Our Method also includes the 18 observed transition
+Safety scores. Neither LLM4POI variant includes Safety in its prompt.
+
 These generated files should be interpreted as joint mobility-safety artifacts rather than raw check-in exports: they combine user trajectories with crime-derived route statistics and safety annotations computed during preprocessing.
 
 ```python
@@ -183,35 +193,19 @@ main(
 
 ### 2. Model Training
 
-Fine-tunes a base LLM (default: Llama-3.1-8B-Instruct) using LoRA with 4-bit quantization.
+Fine-tunes the model to predict the next POI from the observed trajectory, using
+the configured base model and LoRA settings. For example:
 
-**Model checkpoints saved to:**
-```
-models/{DATASET}/traj_len-XX/crime_radius-YYm/crime_time-ZZw/{model}_{w|wo}_safety/best/
+```bash
+python train.py --row 'NYC|our_method' --output-dir runs/nyc_training
 ```
 
-```python
-from train import run_train
+Checkpoints are saved under `runs/nyc_training/checkpoints/`. To resume the same
+run, add `--resume-from-checkpoint /path/to/checkpoint-N`.
 
-run_train(
-    dataset="CHICAGO",
-    traj_len=20,
-    crime_radius=1000,
-    crime_time_weeks=3,
-    base_dir="/absolute/path/to/SafetyIsAllYouNeed",
-    use_safety=True,  # True = safety_textual_*.json
-    model_name="meta-llama/Llama-3.1-8B-Instruct",
-    num_train_epochs=3,
-    lr=2e-5,
-    per_device_train_batch_size=1,
-    gradient_accumulation_steps=1,
-    max_length=2048,
-    lora_r=16,
-    lora_alpha=32,
-    lora_dropout=0.05,
-    target_modules=("q_proj", "v_proj"),
-)
-```
+Row keys combine `NYC` or `CHICAGO` with `our_method`, `llm4poi_31`, or
+`llm4poi_original`, separated by `|`. Seeds, training steps, selected checkpoints,
+precision and inference settings are defined in `MODEL_CONFIG`.
 
 ---
 
@@ -219,22 +213,22 @@ run_train(
 
 Computes accuracy metrics (Acc@1/3/5, MRR) and inference-time route safety analysis.
 
-```python
-from eval import run_eval
-
-metrics = run_eval(
-    dataset="CHICAGO",
-    traj_len=20,
-    crime_radius=1000,
-    crime_time_weeks=3,
-    base_dir="/absolute/path/to/SafetyIsAllYouNeed",
-    use_safety=True,
-)
-
-print(metrics)  # {'acc@1': ..., 'acc@3': ..., 'acc@5': ..., 'mrr': ...}
+```bash
+python eval.py --row 'NYC|our_method' \
+  --adapter runs/nyc_training/checkpoints/checkpoint-4000 \
+  --output-dir runs/nyc_evaluation
 ```
 
-Also outputs `pandas.Series.describe()` of per-route safety scores (normalized [0,1]).
+Use a new output directory. The command checks the matching training manifest
+and saves `predictions.json.gz`, `safety.json`, `weights.json`, and `result.json`.
+To score these same outputs again without running the model:
+
+```bash
+python batch_runner.py evaluate --row 'NYC|our_method' \
+  --predictions runs/nyc_evaluation/predictions.json.gz \
+  --safety runs/nyc_evaluation/safety.json \
+  --output-dir runs/nyc_reevaluation
+```
 
 ---
 
@@ -270,44 +264,21 @@ See `baselines/README.md` for STAN / GETNext / STHGCN instructions and notes.
 
 ### Batch Experiments
 
-Grid search over hyperparameters:
+Train and evaluate all six configurations sequentially:
 
-```python
-from run_preprocessing import main
-from train import run_train
-from eval import run_eval
-
-DATASET = "CHICAGO"
-BASE = "/absolute/path/to/SafetyIsAllYouNeed"
-
-for traj_len in [10, 15, 20, 25]:
-    for radius in [250, 500, 750, 1000]:
-        for tw in [1, 2, 3, 4]:
-            # Preprocessing
-            main(DATASET, traj_len, radius, tw, base_dir=BASE)
-            
-            # Training
-            run_train(
-                dataset=DATASET,
-                traj_len=traj_len,
-                crime_radius=radius,
-                crime_time_weeks=tw,
-                base_dir=BASE,
-                use_safety=True
-            )
-            
-            # Evaluation
-            metrics = run_eval(
-                dataset=DATASET,
-                traj_len=traj_len,
-                crime_radius=radius,
-                crime_time_weeks=tw,
-                base_dir=BASE,
-                use_safety=True
-            )
-            
-            print(f"Config: {traj_len}, {radius}m, {tw}w → {metrics}")
+```bash
+python batch_runner.py run --row all --output-dir runs/paper
 ```
+
+Use a new, empty output directory. Results are written to
+`runs/paper/comparison.json`. Replace `all` with a row key to run one configuration.
+The generic `run_train` and `run_eval` Python APIs remain available for custom
+experiments; the commands above select the configured workflow.
+
+CPU tests can be run with `python -m unittest discover -s tests -v`. CPU tests and
+saved-output checks do not verify a fresh six-model GPU training run; that full
+run remains unverified. The evaluation procedures were reconstructed using the
+published values as a guide, not recovered from the missing historical code.
 
 ---
 

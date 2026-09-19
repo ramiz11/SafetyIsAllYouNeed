@@ -1,23 +1,37 @@
 """Exercise the training/orchestration code with an explicitly fake ML runtime."""
 
+from __future__ import annotations
+from configs import preprocessing_config as pc
 import json
 import tempfile
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-
-from coordinate_pairs_v2.cli import run_rows, write_new_json
-from coordinate_pairs_v2.metrics import read_json
-from coordinate_pairs_v2.train import run_training, verify_training_manifest
+from batch_runner import main, run_rows, write_new_json
+from text_utils import read_json
+from train import run_training, verify_training_manifest
 from baselines.llm4poi.run_llm4poi_baseline import main as baseline_main
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = ROOT / "configs/coordinate_pairs_v2.json"
-CONFIG = read_json(CONFIG_PATH)
+CONFIG_PATH = None
+CONFIG = pc.load_model_config()
 
 
 class TrainingOrchestrationTests(unittest.TestCase):
+    def test_existing_entrypoint_commands_use_the_configured_workflow(self):
+        import contextlib
+        import io
+        row_key = CONFIG["rows"][0]["row_key"]
+        for command, target in (("train", "train.run_training"), ("infer", "eval.run_inference")):
+            args = ["--row", row_key, "--output-dir", "unused-test-output"]
+            if command == "infer":
+                args += ["--adapter", "unused-test-adapter"]
+            with patch(target, return_value={"mocked": True}) as call, contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(args, command=command), {"mocked": True})
+                self.assertEqual(call.call_args.kwargs["row_key"], row_key)
+                self.assertIsNone(call.call_args.kwargs["config_path"])
+
     def test_training_uses_only_train_and_validation_and_emits_own_checkpoint(self):
         row = CONFIG["rows"][0]
         observed = {}
@@ -67,11 +81,11 @@ class TrainingOrchestrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
              patch.dict("sys.modules", {"torch": fake_torch, "datasets": types.SimpleNamespace(Dataset=FakeDataset),
                                         "peft": fake_peft, "transformers": fake_transformers}), \
-             patch("coordinate_pairs_v2.train.load_and_verify_prompts", return_value={
+             patch("train.load_and_verify_prompts", return_value={
                  "train": ["TRAIN"], "validation": ["VALIDATION"], "test": ["DO_NOT_TRAIN_ON_TEST"]}), \
-             patch("coordinate_pairs_v2.train.set_seed") as seed, \
-             patch("coordinate_pairs_v2.train.audit_lengths", return_value={"splits": {}}), \
-             patch("coordinate_pairs_v2.infer._disable_incompatible_torchao"):
+             patch("train.set_seed") as seed, \
+             patch("train.audit_lengths", return_value={"splits": {}}), \
+             patch("eval._disable_incompatible_torchao"):
             result = run_training(repo_root=ROOT, config_path=CONFIG_PATH, row_key=row["row_key"], output_dir=directory)
             self.assertEqual(observed["train_dataset"], ["TRAIN"])
             self.assertEqual(observed["eval_dataset"], ["VALIDATION"])
@@ -93,8 +107,8 @@ class TrainingOrchestrationTests(unittest.TestCase):
             write_new_json(output, {"row_key": kwargs["row_key"], "accepted": False, "test_fixture": True})
             return {"result": str(output)}
         with tempfile.TemporaryDirectory() as directory, \
-             patch("coordinate_pairs_v2.train.run_training", side_effect=train), \
-             patch("coordinate_pairs_v2.infer.run_inference", side_effect=infer), \
+             patch("train.run_training", side_effect=train), \
+             patch("eval.run_inference", side_effect=infer), \
              patch.dict("sys.modules", {"torch": types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: False))}):
             report = run_rows(ROOT, CONFIG_PATH, CONFIG, CONFIG["rows"], directory)
             self.assertEqual(trained, [r["row_key"] for r in CONFIG["rows"]])

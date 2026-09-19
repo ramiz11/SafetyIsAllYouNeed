@@ -1,6 +1,6 @@
 # LLM4POI baselines
 
-Both no-Safety variants use the shared [public reproduction pipeline](../../REPRODUCING.md).
+Both no-Safety variants use the shared [training and evaluation pipeline](../../README.md#2-model-training).
 Users train their own LoRA adapters; no trained checkpoint download is supplied.
 
 - `llm4poi_original`: the configured Llama-2/LongLoRA base model.
@@ -26,4 +26,4 @@ locally trained checkpoint with its matching training manifest.
 
 Run directories must be new for `--mode both`. To resume interrupted training,
 use `--mode train --resume-from-checkpoint /path/to/checkpoint-N`.
-The wrapper delegates to the main reproduction runner.
+The wrapper delegates to `batch_runner.py`.

@@ -1,16 +1,12 @@
+from configs import preprocessing_config as pc
 import copy
 import unittest
-import json
-from pathlib import Path
-
 import pandas as pd
-
-from coordinate_pairs_v2.candidate_postprocessing import history_supported_alternatives, shared_training_augmentation
-
+from eval import history_supported_alternatives, shared_training_augmentation
 
 class CandidatePostprocessingTests(unittest.TestCase):
     def test_shared_augmentation_target_independence_and_idempotence(self):
-        config = json.loads((Path(__file__).resolve().parents[1] / "configs/coordinate_pairs_v2.json").read_text())
+        config = pc.load_model_config()
         contract = config["methods"]["llm4poi_original"]["ranking"]
         train = [pd.DataFrame({"user_id": [1, 1, 1], "poi_id": [2, 3, 4]})]
         record = {"user_id": 1, "history_pois": [2, 3], "target_poi": 777,

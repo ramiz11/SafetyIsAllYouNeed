@@ -10,9 +10,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from coordinate_pairs_v2.cli import main as reproduction_main
-from coordinate_pairs_v2.metrics import read_json
-from coordinate_pairs_v2.train import select_row
+from batch_runner import main as reproduction_main
+from configs import preprocessing_config as pc
+from train import select_row
 
 
 def build_parser():
@@ -21,7 +21,7 @@ def build_parser():
     parser.add_argument("--dataset", choices=("NYC", "CHICAGO"), required=True)
     parser.add_argument("--variant", choices=("llm4poi_31", "llm4poi_original"), required=True)
     parser.add_argument("--base-dir", default=str(REPO_ROOT))
-    parser.add_argument("--config", default="configs/coordinate_pairs_v2.json")
+    parser.add_argument("--config", default=None)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--adapter", type=Path)
     parser.add_argument("--output-dir", type=Path)
@@ -36,7 +36,7 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     row_key = f"{args.dataset}|{args.variant}"
-    config = read_json(Path(args.base_dir) / args.config)
+    config = pc.load_model_config(Path(args.base_dir) / args.config if args.config else None)
     row = select_row(config, row_key)
     for name in ("seed", "base_precision"):
         if getattr(args, name) is not None and getattr(args, name) != row[name]:
@@ -45,7 +45,9 @@ def main(argv=None):
         parser.error("Resume a training run with --mode train")
     row_dir = args.run_dir / row_key.replace("|", "_")
     command = {"train": "train", "eval": "infer", "both": "run"}[args.mode]
-    forwarded = [command, "--repo-root", args.base_dir, "--config", args.config, "--row", row_key]
+    forwarded = [command, "--repo-root", args.base_dir, "--row", row_key]
+    if args.config:
+        forwarded += ["--config", args.config]
     if args.mode == "both":
         if args.adapter or args.output_dir:
             parser.error("--mode both trains its own adapter and uses --run-dir")

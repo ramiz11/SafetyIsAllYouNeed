@@ -1,20 +1,22 @@
 """Synthetic-output tests: these never execute or download a language model."""
 
+from __future__ import annotations
+from configs import preprocessing_config as pc
 import copy
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-
-from coordinate_pairs_v2.cli import main, run_rows, write_new_json
-from coordinate_pairs_v2.evaluate import evaluate_records, evaluate_run, load_numeric_splits
-from coordinate_pairs_v2.infer import _atomic_json, _atomic_json_gz, run_inference
-from coordinate_pairs_v2.metrics import metric_vector, read_json, compare
-from coordinate_pairs_v2.train import verify_training_manifest
+from batch_runner import main, run_rows, write_new_json
+from eval import evaluate_records, evaluate_run, load_numeric_splits
+from eval import _atomic_json, _atomic_json_gz, run_inference
+from eval import metric_vector, compare
+from text_utils import read_json
+from train import verify_training_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = read_json(ROOT / "configs/coordinate_pairs_v2.json")
+CONFIG = pc.load_model_config()
 
 
 def synthetic_inputs(row, splits):
@@ -135,17 +137,17 @@ class PublicWorkflowTests(unittest.TestCase):
             def score(**kwargs):
                 _atomic_json(kwargs["output_path"], safety)
                 return safety
-            with patch("coordinate_pairs_v2.infer.prepare_model", return_value=(None, None)), \
-                 patch("coordinate_pairs_v2.infer.generate_variant", side_effect=generate), \
-                 patch("coordinate_pairs_v2.score_safety.score_safety", side_effect=score):
-                result = run_inference(repo_root=ROOT, config_path=ROOT / "configs/coordinate_pairs_v2.json",
+            with patch("eval.prepare_model", return_value=(None, None)), \
+                 patch("eval.generate_variant", side_effect=generate), \
+                 patch("safety.score_safety", side_effect=score):
+                result = run_inference(repo_root=ROOT, config_path=None,
                                        row_key=row["row_key"], adapter_path=adapter, output_dir=output)
             self.assertEqual(result["metrics"]["unrounded"]["acc1"], 1.)
             self.assertEqual(read_json(output / "result.json")["evaluation_contract"], "connected_population_v1")
             self.assertTrue((output / "weights.json").is_file())
-            with patch("coordinate_pairs_v2.infer.prepare_model", side_effect=AssertionError("Model should not load")):
+            with patch("eval.prepare_model", side_effect=AssertionError("Model should not load")):
                 with self.assertRaises(FileExistsError):
-                    run_inference(repo_root=ROOT, config_path=ROOT / "configs/coordinate_pairs_v2.json",
+                    run_inference(repo_root=ROOT, config_path=None,
                                   row_key=row["row_key"], adapter_path=adapter, output_dir=output)
 
     def test_cli_requires_new_run_inputs_and_fresh_outputs(self):

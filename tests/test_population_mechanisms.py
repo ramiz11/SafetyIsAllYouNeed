@@ -1,18 +1,14 @@
+from configs import preprocessing_config as pc
 import unittest
-import json
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
-
-from coordinate_pairs_v2.population_mechanisms import (
+from preprocessing import (
     derive_session_threshold, observed_session_counts,
     eligible_trailing_session_multiplicities,
     observed_stream_session_representatives,
     novelty_signature_join_multiplicities,
     derive_history_quality_envelope, history_quality_mask, observed_history_quality,
 )
-
 
 def trajectory(user=1, day="2020-01-01", minutes=(0, 5, 40, 41)):
     return pd.DataFrame({"user_id": [user] * len(minutes),
@@ -123,8 +119,7 @@ class PopulationMechanismTests(unittest.TestCase):
             observed_history_quality(normal)
 
     def test_both_cities_share_one_method_definition(self):
-        path = Path(__file__).resolve().parents[1] / "configs/coordinate_pairs_v2.json"
-        config = json.loads(path.read_text())
+        config = pc.load_model_config()
         self.assertEqual(set(config["methods"]), {"our_method", "llm4poi_31", "llm4poi_original"})
         for row in config["rows"]:
             self.assertIn(row["variant"], config["methods"])

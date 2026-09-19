@@ -27,7 +27,7 @@ def main(
     if prompts_only:
         if prompt_contract != "coordinate_pairs_v2":
             raise ValueError("--prompts-only requires coordinate_pairs_v2")
-        from coordinate_pairs_v2.prompts import write_canonical_prompts
+        from text_utils import write_canonical_prompts
         return write_canonical_prompts(
             Path(pc.TRAIN_TRAJECTORIES_PKL_PATH).resolve().parent,
             output_root=prompt_output_dir,
@@ -163,7 +163,7 @@ def main(
         print("Injected safety into test trajectories")
 
     if prompt_contract == "coordinate_pairs_v2":
-        from coordinate_pairs_v2.prompts import write_canonical_prompts
+        from text_utils import write_canonical_prompts
 
         numeric_root = Path(pc.TRAIN_TRAJECTORIES_PKL_PATH).resolve().parent
         manifest = write_canonical_prompts(

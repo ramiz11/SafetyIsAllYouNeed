@@ -3,7 +3,7 @@
 
 This folder contains baseline implementations and helpers used in the paper. The goal is to make it easy to reproduce baseline results using the **same trajectories and safety-score computation** as the main pipeline.
 
-For the six LLM configurations, follow [the reproduction guide](../REPRODUCING.md).
+For the six LLM configurations, follow [the training and evaluation instructions](../README.md#2-model-training).
 Users train their own models, then run the shared public inference/evaluation
 code. Prompts include observed coordinates and omit held-out attributes.
 

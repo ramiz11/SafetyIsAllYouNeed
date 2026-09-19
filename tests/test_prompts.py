@@ -1,18 +1,17 @@
+from __future__ import annotations
+from configs import preprocessing_config as pc
 import json
 import pickle
 import tempfile
 import unittest
 from pathlib import Path
-
 import pandas as pd
 import text_utils
-from coordinate_pairs_v2.prompts import (
-    audit_prompts, materialize_prompts, validate_manifest_header,
-    verify_canonical_prompts, write_canonical_prompts,
-)
-from coordinate_pairs_v2.metrics import read_json
+from text_utils import audit_prompts, materialize_prompts, validate_manifest_header, verify_canonical_prompts, write_canonical_prompts
+from text_utils import read_json
+
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = read_json(ROOT / "configs/coordinate_pairs_v2.json")
+CONFIG = pc.load_model_config()
 
 class PromptContractTests(unittest.TestCase):
     def test_canonical_manifest_round_trip_and_tampering(self):
