@@ -4,15 +4,39 @@ import json
 import pickle as pkl
 import pandas as pd
 import argparse
+from pathlib import Path
 from configs import preprocessing_config as pc
-import preprocessing as pp
-import safety as sf
 import text_utils as tu
 
 
-def main(dataset: str = "CHICAGO", traj_len: int = 20, crime_radius: int = 1000, crime_time_weeks: int = 3,
-    base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed"):
+def main(
+    dataset: str = "CHICAGO",
+    traj_len: int = 20,
+    crime_radius: int = 1000,
+    crime_time_weeks: int = 3,
+    base_dir: str = "/absolute/path/to/SafetyIsAllYouNeed",
+    prompt_contract: str = "coordinate_pairs_v2",
+    prompt_output_dir: str = None,
+    coordinate_precision: int = 6,
+    coordinate_missing: str = "error",
+    prompts_only: bool = False,
+):
     pc.update_config(dataset, traj_len, crime_radius, crime_time_weeks, base_dir=base_dir)
+    if prompt_contract not in tu.PROMPT_CONTRACTS:
+        raise ValueError(f"Unknown prompt contract: {prompt_contract}")
+    if prompts_only:
+        if prompt_contract != "coordinate_pairs_v2":
+            raise ValueError("--prompts-only requires coordinate_pairs_v2")
+        from coordinate_pairs_v2.prompts import write_canonical_prompts
+        return write_canonical_prompts(
+            Path(pc.TRAIN_TRAJECTORIES_PKL_PATH).resolve().parent,
+            output_root=prompt_output_dir,
+            coordinate_precision=coordinate_precision,
+            coordinate_missing=coordinate_missing,
+        )
+    import preprocessing as pp
+    import safety as sf
+
     start = time.time()
     print(f"Run with: dataset={pc.DATASET}, traj_len={pc.TRAJ_LENGTH}, radius={pc.CRIME_RADIUS}m, time_window={pc.CRIME_TIME_WINDOW}w")
     # Load crimes + checkins
@@ -31,11 +55,10 @@ def main(dataset: str = "CHICAGO", traj_len: int = 20, crime_radius: int = 1000,
     train_df, validation_df, test_df = pp.reindex_poi_ids(train_df, validation_df, test_df)
     print("Reindexed POI IDs to contiguous range")
     # POI id range for textual prompts (max_id + 1)
-    poi_max = max(
-        train_df['poi_id'].max() if len(train_df) else -1,
-        validation_df['poi_id'].max() if len(validation_df) else -1,
-        test_df['poi_id'].max() if len(test_df) else -1
-    )
+    # Eligibility has already restricted later splits to train-known POIs, so
+    # derive even the displayed output range from training only. This keeps
+    # validation/test metadata out of every model-input construction step.
+    poi_max = train_df['poi_id'].max() if len(train_df) else -1
     POI_ID_RANGE = int(poi_max) + 1 if poi_max >= 0 else 0
     # Build trajectories
     if os.path.exists(pc.TRAIN_TRAJECTORIES_PKL_PATH) and os.path.exists(pc.VALIDATION_TRAJECTORIES_PKL_PATH) and os.path.exists(pc.TEST_TRAJECTORIES_PKL_PATH):
@@ -139,6 +162,24 @@ def main(dataset: str = "CHICAGO", traj_len: int = 20, crime_radius: int = 1000,
         pp.save_pickle(test_trajs_with_safety, pc.TEST_TRAJS_WITH_SAFETY_PKL_PATH)
         print("Injected safety into test trajectories")
 
+    if prompt_contract == "coordinate_pairs_v2":
+        from coordinate_pairs_v2.prompts import write_canonical_prompts
+
+        numeric_root = Path(pc.TRAIN_TRAJECTORIES_PKL_PATH).resolve().parent
+        manifest = write_canonical_prompts(
+            numeric_root,
+            output_root=prompt_output_dir,
+            coordinate_precision=coordinate_precision,
+            coordinate_missing=coordinate_missing,
+        )
+        print(
+            "Created coordinate_pairs_v2 prompts at:",
+            Path(prompt_output_dir).resolve() if prompt_output_dir else numeric_root,
+        )
+        return manifest
+    if prompt_contract != "coordinate_free_v1":
+        raise ValueError(f"Unknown prompt contract: {prompt_contract}")
+
     ## Textual trajectories
     def construct_textual_trajectories(numeric_trajectories: list, out_path: str):
         texts = []
@@ -193,9 +234,19 @@ def main(dataset: str = "CHICAGO", traj_len: int = 20, crime_radius: int = 1000,
         return texts
 
     if not os.path.exists(pc.SAFETY_TEXTUAL_TRAIN_TRAJS_JSON_PATH):
-        finalize_textual_trajectories(train_textual_trajectories, train_trajs_with_safety, pc.SAFETY_TEXTUAL_TRAIN_TRAJS_JSON_PATH)
+        finalize_textual_trajectories(
+            train_textual_trajectories,
+            train_trajs_with_safety,
+            pc.SAFETY_TEXTUAL_TRAIN_TRAJS_JSON_PATH,
+            observed_history_only=True,
+        )
     if not os.path.exists(pc.SAFETY_TEXTUAL_VALIDATION_TRAJS_JSON_PATH):
-        finalize_textual_trajectories(validation_textual_trajectories, validation_trajs_with_safety, pc.SAFETY_TEXTUAL_VALIDATION_TRAJS_JSON_PATH)
+        finalize_textual_trajectories(
+            validation_textual_trajectories,
+            validation_trajs_with_safety,
+            pc.SAFETY_TEXTUAL_VALIDATION_TRAJS_JSON_PATH,
+            observed_history_only=True,
+        )
     if not os.path.exists(pc.SAFETY_TEXTUAL_TEST_TRAJS_JSON_PATH):
         finalize_textual_trajectories(
             test_textual_trajectories,
@@ -215,10 +266,22 @@ def main(dataset: str = "CHICAGO", traj_len: int = 20, crime_radius: int = 1000,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="CHICAGO", choices=["NYC", "CHICAGO"])
-    parser.add_argument("--traj_len", type=int, default=10)
+    parser.add_argument("--traj_len", type=int, default=20)
     parser.add_argument("--crime_radius", type=int, default=1000)
     parser.add_argument("--crime_time_weeks", type=int, default=3)
     parser.add_argument("--base_dir", default="/absolute/path/to/SafetyIsAllYouNeed")
+    parser.add_argument(
+        "--prompt_contract", "--prompt-contract",
+        choices=("coordinate_free_v1", "coordinate_pairs_v2"),
+        default="coordinate_pairs_v2",
+    )
+    parser.add_argument("--prompt_output_dir")
+    parser.add_argument("--prompts-only", action="store_true",
+                        help="Regenerate prompts from existing numeric data without recomputing routes")
+    parser.add_argument("--coordinate_precision", type=int, default=6)
+    parser.add_argument(
+        "--coordinate_missing", choices=("error", "omit"), default="error"
+    )
     args = parser.parse_args()
 
     main(
@@ -227,4 +290,9 @@ if __name__ == "__main__":
         crime_radius=args.crime_radius,
         crime_time_weeks=args.crime_time_weeks,
         base_dir=args.base_dir,
+        prompt_contract=args.prompt_contract,
+        prompt_output_dir=args.prompt_output_dir,
+        coordinate_precision=args.coordinate_precision,
+        coordinate_missing=args.coordinate_missing,
+        prompts_only=args.prompts_only,
     )

@@ -1,0 +1,15 @@
+-r preprocessing.txt
+
+# Frozen CUDA runtime used for the coordinate_pairs_v2 training and inference
+# confirmations. On Linux, install this file using the PyTorch CUDA 12.8 wheel
+# index so the pinned torch version resolves to torch 2.11.0+cu128.
+torch==2.11.0
+transformers==5.15.1
+peft==0.20.0
+accelerate==1.14.0
+bitsandbytes==0.50.2; platform_system == "Linux"
+datasets==4.0.0
+huggingface_hub>=1.0,<2.0
+safetensors>=0.4.3
+
+# Prompt audits and evaluation unit tests do not require a GPU.

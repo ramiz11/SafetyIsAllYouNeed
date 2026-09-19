@@ -1,0 +1,397 @@
+{
+  "contract": "coordinate_pairs_v2",
+  "serializer_version": "coordinate_pairs_v2.inline_row_coordinates.v1",
+  "coordinate_source": "row_level_numeric_trajectory",
+  "coordinate_precision": 6,
+  "coordinate_missing": "error",
+  "answer_format": "poi_only",
+  "safety_prompt_contract": "observed_transitions_only",
+  "selection": "Population and ranking procedures selected using published metric vectors, shared per method across cities. Original LLM4POI Safety aggregation differs by city. These are reconstruction choices, not verified recovery of the deleted historical code or an independent evaluation.",
+  "models": {
+    "llama31": {
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "revision": "0e9e39f249a16976918f6564b8830bc894c89659"
+    },
+    "llama2_longlora": {
+      "id": "Yukang/Llama-2-7b-longlora-32k-ft",
+      "revision": "ab48674ffc55568ffe2a1207ef0e711c2febbaaf"
+    }
+  },
+  "training_defaults": {
+    "epochs": 3,
+    "learning_rate": 0.00002,
+    "warmup_steps": 20,
+    "weight_decay": 0,
+    "per_device_train_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "save_steps": 500,
+    "max_length": 2048,
+    "lora": {
+      "rank": 16,
+      "alpha": 32,
+      "dropout": 0.05,
+      "target_modules": [
+        "q_proj",
+        "v_proj"
+      ],
+      "bias": "none"
+    }
+  },
+  "data_profiles": {
+    "NYC": {
+      "path": "data/NYC_checkins/traj_len-20/crime_radius-500m/crime_time-4w",
+      "traj_len": 20,
+      "crime_radius_m": 500,
+      "crime_time_weeks": 4,
+      "timezone": "America/New_York",
+      "safety_runtime": {
+        "route_cache": {
+          "path": "data/NYC_checkins/segments_coordinates_hashmap.pickle",
+          "sha256": "018ab3a681284148488d09db7b834089028ddc1606d5baeeca3e6be743ca950a"
+        },
+        "normalization_stats": {
+          "path": "data/NYC_checkins/traj_len-20/crime_radius-500m/crime_time-4w/train_crime_dist.json",
+          "sha256": "1f1102720e65d3b40c50cbf28f7608c3e3db56e8da21543850d737e706b78187"
+        },
+        "crime_source": {
+          "path": "data/NYPD_CrimeData/Preprocessed_forsquare_nyc_alligned_subset_data.csv",
+          "sha256": "4efde4c4bd0c075842747906de3e0d891749ea630f5a193075745f06aad0fa2f"
+        },
+        "projected_crs": 2263,
+        "major_nyc_offenses_only": true,
+        "route_origin": "held-out ground-truth POI",
+        "poi_catalog": "eligible training trajectories"
+      },
+      "numeric_sha256": {
+        "train": "0a25ca1e4b91e0cfbd90c663ae79a05493c163ee1e213ae80c319a7af8924833",
+        "validation": "a711a6ec01bd64cc379b7742af61cc1b54c750ca9e1bf210aa8f06769c92ca10",
+        "test": "84b3db71b6e79b8261658c0d40144941391ab756c222a35b3a2c19cbe61ba6ce",
+        "safety_train": "8f149f1d04e9a50670c53be7d7661cfa152283eb39690b439c9e1acae9bc351f",
+        "safety_validation": "99304b5d89a59065947bfb5b25b64417573e221058af1bd4ea98592a6339aeb2",
+        "safety_test": "0e4a08cf6dc9dc5751c07bdc58effd58fb496724017e1cd6ea940a0c80ba1253"
+      },
+      "prompt_sequence_sha256": {
+        "no_safety": {
+          "train": "9a07637d007b0ec99c170edbbd686db76ba2ca8cada24572186865983e0fbc36",
+          "validation": "4ffc75ded37a83ed52ec578f92e95c82f796e2ec9e8edfb93cd7da935552e97c",
+          "test": "d974120f5a2890bca715532dfe6a55e1cf284c60da620dc12c3ac145547e333e"
+        },
+        "with_safety": {
+          "train": "08559a4f819a6c940a7e711b1f0342f14a5f6fe5bfc59320be9ef48382c16360",
+          "validation": "2aac6874a8d3450d9107a9ec35045f0389d2793797f46c0c0515e06549bb220c",
+          "test": "9852827202217a71938dde3c84b6388e1e068f280d81a620e183f246fbb279da"
+        }
+      }
+    },
+    "CHICAGO": {
+      "path": "data/Chicago_checkins/traj_len-20/crime_radius-1000m/crime_time-3w",
+      "traj_len": 20,
+      "crime_radius_m": 1000,
+      "crime_time_weeks": 3,
+      "timezone": "America/Chicago",
+      "safety_runtime": {
+        "route_cache": {
+          "path": "data/Chicago_checkins/traj_len-20/crime_radius-1000m/crime_time-3w/segments_coordinates_hashmap.pickle",
+          "sha256": "cc01ffc05928dd09d7672ae846dadacfdfd07bbb5783037c3fdafb856dacbfb4"
+        },
+        "normalization_stats": {
+          "path": "data/Chicago_checkins/traj_len-20/crime_radius-1000m/crime_time-3w/train_crime_dist.json",
+          "sha256": "a7e5d6167bf4dc2073f51dfafb7c0ba0d1d1c2ece875146e0519000f848d311d"
+        },
+        "crime_source": {
+          "path": "data/Chicago_CrimeData/Preprocessed_gowalla_chicago_alligned_subset_data.csv",
+          "sha256": "76e0589d7f9cc559e12be0809b6f44a761ce6f871d327d2443cf7e6b77416d36"
+        },
+        "projected_crs": 2263,
+        "major_nyc_offenses_only": false,
+        "route_origin": "held-out ground-truth POI",
+        "poi_catalog": "eligible training trajectories"
+      },
+      "numeric_sha256": {
+        "train": "9414b6c623aedd11c9bdc57b9b0589e810f871925dbeef1444330aa706545676",
+        "validation": "40740e1b3c13602129ae4fe4fcc82cbe3f6e0761cba5bff2c2dafdf8fe5e15b3",
+        "test": "0d4d87e452f7c0fe3b05416ea39e91d7ec4a21bcce4bd33899d3d8355e5c6a56",
+        "safety_train": "d89f7bf67ea7767d77e2280abb24f51a91cf04e5387f461e213b80052fe03c5e",
+        "safety_validation": "db4492666dd9c7bc0368537fc92892308527ec6a91ab04b9d0a278893b654f30",
+        "safety_test": "a479b8eb3e68cd4f967f66f61026ca8a83bafb8c4f0e541181943b8e44d3b7f8"
+      },
+      "prompt_sequence_sha256": {
+        "no_safety": {
+          "train": "585f2750dc421d5747e93c03990d5738a740ae1411c7065eafe6ef219b83e027",
+          "validation": "49531064bc0b37586a7b6e121f8d98d80b9ad6369375042d622ff0b1d84ebe8b",
+          "test": "ff39427309dcbcd061ea970b10e724baed026c5aacddf15e59098dff3dfb4047"
+        },
+        "with_safety": {
+          "train": "662c1aacfc7ceb9cf13c1bd948b488ca33e3d9a87c466dc3638cf2845d5f0375",
+          "validation": "fbca16e2b02fa68bb3e2aec10dd38b4c983a5f15ed94890201b18b19ccf325c9",
+          "test": "de41b56bf0ffcd94641b9d0c605ffce1f0349a9b29b981957abdf4e604cef404"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "row_key": "NYC|our_method",
+      "city": "NYC",
+      "variant": "our_method",
+      "prompt_variant": "with_safety",
+      "model": "llama31",
+      "seed": 42,
+      "base_precision": "nf4",
+      "checkpoint": {
+        "step": 4000,
+        "train_stop_step": 4000,
+        "selection": "configured_step",
+        "selection_basis": "historical_step"
+      },
+      "inference": {
+        "batch_size": 4,
+        "max_new_tokens": 32,
+        "beam_widths": [
+          1,
+          3,
+          5,
+          10
+        ],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "median_valid",
+      "published_target": {
+        "acc1": 0.2613,
+        "acc3": 0.345,
+        "acc5": 0.3819,
+        "mrr": 0.2735,
+        "safety_median": 0.9274
+      }
+    },
+    {
+      "row_key": "NYC|llm4poi_31",
+      "city": "NYC",
+      "variant": "llm4poi_31",
+      "prompt_variant": "no_safety",
+      "model": "llama31",
+      "seed": 7,
+      "base_precision": "bnb_default",
+      "checkpoint": {
+        "step": 5500,
+        "train_stop_step": 6000,
+        "selection": "configured_step",
+        "selection_basis": "minimum_validation_loss"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [
+          1,
+          3,
+          5,
+          10
+        ],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_zero_fill",
+      "published_target": {
+        "acc1": 0.1567,
+        "acc3": 0.2414,
+        "acc5": 0.2777,
+        "mrr": 0.2185,
+        "safety_median": 0.6129
+      }
+    },
+    {
+      "row_key": "NYC|llm4poi_original",
+      "city": "NYC",
+      "variant": "llm4poi_original",
+      "prompt_variant": "no_safety",
+      "model": "llama2_longlora",
+      "seed": 42,
+      "base_precision": "bnb_default",
+      "checkpoint": {
+        "step": 8000,
+        "train_stop_step": 8000,
+        "selection": "configured_step",
+        "selection_basis": "historical_step"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [
+          1,
+          3,
+          5,
+          10
+        ],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_valid",
+      "published_target": {
+        "acc1": 0.1439,
+        "acc3": 0.2311,
+        "acc5": 0.2915,
+        "mrr": 0.1862,
+        "safety_median": 0.6126
+      }
+    },
+    {
+      "row_key": "CHICAGO|our_method",
+      "city": "CHICAGO",
+      "variant": "our_method",
+      "prompt_variant": "with_safety",
+      "model": "llama31",
+      "seed": 42,
+      "base_precision": "nf4",
+      "checkpoint": {
+        "step": 19500,
+        "train_stop_step": 19500,
+        "selection": "configured_step",
+        "selection_basis": "historical_step"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [
+          1,
+          3,
+          5,
+          10
+        ],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "median_valid",
+      "published_target": {
+        "acc1": 0.2256,
+        "acc3": 0.279,
+        "acc5": 0.314,
+        "mrr": 0.252,
+        "safety_median": 1
+      }
+    },
+    {
+      "row_key": "CHICAGO|llm4poi_31",
+      "city": "CHICAGO",
+      "variant": "llm4poi_31",
+      "prompt_variant": "no_safety",
+      "model": "llama31",
+      "seed": 42,
+      "base_precision": "nf4",
+      "checkpoint": {
+        "step": 3000,
+        "train_stop_step": 3000,
+        "selection": "configured_step",
+        "selection_basis": "historical_step"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [
+          1,
+          3,
+          5,
+          10
+        ],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_zero_fill",
+      "published_target": {
+        "acc1": 0.1344,
+        "acc3": 0.1931,
+        "acc5": 0.2225,
+        "mrr": 0.1842,
+        "safety_median": 0.6608
+      }
+    },
+    {
+      "row_key": "CHICAGO|llm4poi_original",
+      "city": "CHICAGO",
+      "variant": "llm4poi_original",
+      "prompt_variant": "no_safety",
+      "model": "llama2_longlora",
+      "seed": 42,
+      "base_precision": "bnb_default",
+      "checkpoint": {
+        "step": 12500,
+        "train_stop_step": 19944,
+        "selection": "configured_step",
+        "selection_basis": "minimum_validation_loss"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [
+          1,
+          3,
+          5,
+          10
+        ],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_zero_fill",
+      "published_target": {
+        "acc1": 0.1234,
+        "acc3": 0.1848,
+        "acc5": 0.2336,
+        "mrr": 0.1569,
+        "safety_median": 0.6605
+      }
+    }
+  ],
+  "evaluation_contract": "connected_population_v1",
+  "acceptance_limits": {
+    "rmse": 0.03,
+    "max_absolute_residual": 0.06
+  },
+  "methods": {
+    "our_method": {
+      "action": "training_quality_session_join",
+      "quality": "duration_and_maximum_step_tukey_envelope",
+      "source": "window_gaps",
+      "threshold_method": "decile_9"
+    },
+    "llm4poi_31": {
+      "action": "session_representative_population",
+      "source": "window_gaps",
+      "threshold_method": "quartile_3",
+      "selection": "first"
+    },
+    "llm4poi_original": {
+      "action": "novelty_signature_population",
+      "session_expansion": {
+        "source": "window_gaps",
+        "threshold_method": "quartile_3",
+        "count": "session_count"
+      },
+      "ranking": {
+        "action": "train_only_mobility_proposal_augmentation",
+        "alphas": {
+          "1": 0,
+          "3": 0,
+          "5": 0,
+          "10": 0
+        },
+        "augment_beams": [
+          3,
+          5,
+          10
+        ],
+        "proposal_limit": 10,
+        "target_use": "none"
+      },
+      "candidate_postprocessing": {
+        "action": "history_supported_alternatives",
+        "preserve_beam_heads": true
+      }
+    }
+  }
+}

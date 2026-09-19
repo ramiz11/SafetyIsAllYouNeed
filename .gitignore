@@ -4,3 +4,32 @@ __pycache__/
 .idea/
 .cursor/
 *.iml
+
+# Private research material and local run outputs are not publication assets.
+/archival/
+/tmp/
+/.codex*/
+/runs/
+/.venv/
+/models/
+**/checkpoint-*/
+adapter_model*.safetensors
+adapter_model*.bin
+*.safetensors
+pytorch_model*.bin
+optimizer.pt
+scheduler.pt
+training_args.bin
+/defense_evidence_audit.md
+/presentation_reader_notes*.md
+
+# Private archival-reconstruction provenance and candidate-search artifacts.
+# Frozen public contracts, verification reports, and figures remain trackable.
+archival/private-results/
+archival/private_results/
+archival/results/experiment_ledger.json
+archival/results/candidates.json
+archival/results/*rule_scan*.json
+archival/results/*inventory*.json
+archival/results/*reconciliation*.json
+archival/results/*multiseed*.json

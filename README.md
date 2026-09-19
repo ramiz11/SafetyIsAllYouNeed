@@ -14,10 +14,18 @@ This project implements **POI (Point-of-Interest) next-visit prediction** using 
 
 The pipeline is:
 - ✅ **City-agnostic** (NYC / Chicago supported)
-- ✅ **Fully reproducible** end-to-end
+- ✅ **Configured end-to-end workflow** for training and evaluation
 - ✅ **Research-ready** with pre-computed optimal configurations
 
 **Pipeline:** `Preprocessing → Prompt Generation → LoRA Fine-tuning → Evaluation`
+
+> **Reproduce the six LLM configurations:** follow [REPRODUCING.md](REPRODUCING.md).
+> The supported path is `scripts/reproduce_coordinate_pairs_v2.py`: verify the
+> coordinate-bearing data, train your own LoRA adapters, run inference, and
+> evaluate. No trained weights or private
+> downloads are supplied. Reference results approximately match the paper;
+> fresh training may differ. The generic APIs below remain available for other
+> experiments and are not substitutes for this configured six-row workflow.
 
 ---
 
@@ -102,7 +110,9 @@ huggingface-cli login
 
 ## ⚙️ Configuration
 
-All settings are centralized in `configs/preprocessing_config.py`.
+General preprocessing settings live in `configs/preprocessing_config.py`.
+The six-row reproduction recipe uses `configs/coordinate_pairs_v2.json`;
+follow [REPRODUCING.md](REPRODUCING.md) for its training and scoring settings.
 
 ### Key Parameters
 
@@ -147,8 +157,11 @@ Generates trajectories, caches OSRM routes, computes crime counts, and builds te
 - `train_trajectories.pickle`, `validation_trajectories.pickle`, `test_trajectories.pickle`
 - `segments_coordinates_hashmap.pickle`
 - `segments_crimes_count_hashmap.json`
-- `textual_{train,val,test}_trajs.json`
-- `safety/safety_textual_{train,val,test}_trajs.json`
+- `textual_{train,validation,test}_trajs.json`
+- `safety/safety_textual_{train,validation,test}_trajs.json`
+
+The default prompt format includes observed latitude/longitude pairs. Regenerating
+prompts updates these canonical textual files.
 
 These generated files should be interpreted as joint mobility-safety artifacts rather than raw check-in exports: they combine user trajectories with crime-derived route statistics and safety annotations computed during preprocessing.
 
@@ -246,11 +259,9 @@ LLM4POI (pre‑3.1) baseline:
 python baselines/llm4poi/run_llm4poi_baseline.py \
   --mode both \
   --dataset CHICAGO \
-  --traj-len 20 \
-  --crime-radius 1000 \
-  --crime-time-weeks 3 \
+  --variant llm4poi_original \
   --base-dir /absolute/path/to/SafetyIsAllYouNeed \
-  --model-name Llama-2-7b-longlora-32k
+  --run-dir runs/chicago_original
 ```
 
 See `baselines/README.md` for STAN / GETNext / STHGCN instructions and notes.
@@ -320,8 +331,8 @@ We provide **ready-to-use training, validation, and test trajectories** with saf
 - **Safety score:** `safety = 1 - scaled_crime_count`, so higher values indicate safer routes.
 
 
-### Prompt Masking
-Training loss computed **only on answer span** (after `<answer>:` token).
+### Next-POI Training
+Fine-tunes the model to predict the next POI from the observed trajectory.
 
 Test prompts include route-safety scores only for transitions between observed check-ins. The transition to the POI being predicted is not included in the prompt.
 

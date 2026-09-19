@@ -3,12 +3,16 @@
 
 This folder contains baseline implementations and helpers used in the paper. The goal is to make it easy to reproduce baseline results using the **same trajectories and safety-score computation** as the main pipeline.
 
+For the six LLM configurations, follow [the reproduction guide](../REPRODUCING.md).
+Users train their own models, then run the shared public inference/evaluation
+code. Prompts include observed coordinates and omit held-out attributes.
+
 ## Coverage (what the paper mentions)
 
 - **LSTM / GRU** (local, implemented here): `baselines/lstm_gru/run_lstm_gru.py`
 - **LLM4POI** (local wrapper, implemented here): `baselines/llm4poi/run_llm4poi_baseline.py`
-  - Use `--model-name Llama-2-7b-longlora-32k` for the **pre-3.1** baseline
-  - Use `--model-name meta-llama/Llama-3.1-8B-Instruct` for the **LLM4POI-3.1** baseline
+  - Use `--variant llm4poi_original` for the **pre-3.1** baseline
+  - Use `--variant llm4poi_31` for the **LLM4POI-3.1** baseline
 - **STAN / STHGCN / GETNext** (external repos): this repo exports inputs and provides copy helpers; the actual training code lives upstream.
 
 ## Why `lstm_gru/` is one baseline
@@ -71,7 +75,8 @@ The notebooks in `baselines/notebooks/` were originally run in Colab and include
 ## LLM4POI (pre‑3.1 and 3.1 baselines)
 
 See `baselines/llm4poi/README.md` for training and evaluation.
-This wrapper implements the **limited-history** variant (same-user history only; no key-query similarity).
+This wrapper uses the observed 19-check-in prefix, with no Safety prompt injection
+and no key-query similarity, and delegates to the shared reproduction runner.
 
 ## LSTM / GRU
 

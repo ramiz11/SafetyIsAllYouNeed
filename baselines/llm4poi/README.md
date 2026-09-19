@@ -1,27 +1,29 @@
+# LLM4POI baselines
 
-# LLM4POI Baseline (pre‑Llama‑3.1)
+Both no-Safety variants use the shared [public reproduction pipeline](../../REPRODUCING.md).
+Users train their own LoRA adapters; no trained checkpoint download is supplied.
 
-This baseline mirrors the LLM4POI setup (trajectory prompting + LoRA fine‑tuning) **without safety injection** and **without Llama‑3.1**.
-It follows the **limited‑history variant described in our paper** (historical trajectories from the same user only, **no key‑query similarity**).
+- `llm4poi_original`: the configured Llama-2/LongLoRA base model.
+- `llm4poi_31`: Llama-3.1-8B-Instruct.
 
-## Run
+Both receive the 19 observed check-ins, including row-level coordinates, with
+the 20th POI as the training answer. Neither receives transition Safety in the
+prompt or uses the key-query similarity module. See the central configuration
+for per-row precision, seeds, checkpoint steps and inference settings.
+
+## Train, infer and evaluate
 
 ```bash
 python baselines/llm4poi/run_llm4poi_baseline.py \
-  --mode both \
-  --dataset CHICAGO \
-  --traj-len 20 \
-  --crime-radius 1000 \
-  --crime-time-weeks 3 \
-  --base-dir /absolute/path/to/SafetyIsAllYouNeed \
-  --model-name Llama-2-7b-longlora-32k
+  --mode both --dataset CHICAGO --variant llm4poi_original \
+  --run-dir runs/chicago_original
 ```
 
-> **Important:** `Llama-2-7b-longlora-32k` is a placeholder. Set `--model-name` to the exact HF checkpoint or local path you want reviewers to use.
-> This baseline does **not** implement the key‑query similarity module from LLM4POI.
+Switch to `--variant llm4poi_31` for the Llama-3.1 baseline. Use `--mode train`
+for training only, then `--mode eval` with the same run directory to load the
+configured checkpoint from that training run. `--adapter` can specify another
+locally trained checkpoint with its matching training manifest.
 
-To reproduce the **LLM4POI‑3.1** baseline in this repo, run the same script with:
-`--model-name meta-llama/Llama-3.1-8B-Instruct`
-
-Optional:
-- `--max-hist-trajs N` limits same‑user historical trajectories (0 = all).
+Run directories must be new for `--mode both`. To resume interrupted training,
+use `--mode train --resume-from-checkpoint /path/to/checkpoint-N`.
+The wrapper delegates to the main reproduction runner.
