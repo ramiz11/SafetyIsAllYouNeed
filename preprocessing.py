@@ -425,7 +425,7 @@ def observed_history_quality(frame):
 def derive_history_quality_envelope(training):
     """Training-only nonnegative Tukey bounds, retaining window multiplicity."""
     if not training:
-        raise ValueError("Quality calibration requires training trajectories")
+        raise ValueError("Quality envelope requires training trajectories")
     records = [observed_history_quality(frame) for frame in training]
     bounds = {}
     for feature in ("span_hours", "step_distance_km_max"):
@@ -440,7 +440,7 @@ def derive_history_quality_envelope(training):
 
 
 def history_quality_mask(trajectories, bounds):
-    """Use a frozen training envelope; never calibrate on evaluation outcomes."""
+    """Apply fixed quality bounds derived from the training trajectories."""
     if set(bounds) != {"span_hours", "step_distance_km_max"}:
         raise ValueError("Quality envelope requires duration and maximum step")
     for interval in bounds.values():

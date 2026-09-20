@@ -1,7 +1,7 @@
 
 # Baselines
 
-This folder contains baseline implementations and helpers used in the paper. The goal is to make it easy to reproduce baseline results using the **same trajectories and safety-score computation** as the main pipeline.
+This folder contains baseline implementations and helpers used in the paper. They run the baseline evaluations using the **same trajectories and safety-score computation** as the main pipeline.
 
 For the six LLM configurations, follow [the training and evaluation instructions](../README.md#2-model-training).
 Users train their own models, then run the shared public inference/evaluation
@@ -23,7 +23,7 @@ LSTM and GRU share the same dataset construction, training loop, and evaluation.
 
 All baselines consume different input formats. Use the export script to convert the preprocessed trajectories into baseline‑specific files:
 
-The examples below use NYC's optimal preprocessing settings: trajectory length 20, crime radius 500 m, and crime window 4 weeks.
+The examples below use the paper's configured NYC preprocessing settings: trajectory length 20, crime radius 500 m, and crime window 4 weeks.
 
 ```bash
 python scripts/export_baseline_inputs.py \
@@ -78,7 +78,7 @@ The notebooks in `baselines/notebooks/` were originally run in Colab and include
 
 See `baselines/llm4poi/README.md` for training and evaluation.
 This wrapper uses the observed 19-check-in prefix, with no Safety prompt injection
-and no key-query similarity, and delegates to the shared reproduction runner.
+and no key-query similarity, and delegates to the shared batch evaluation runner.
 
 ## LSTM / GRU
 

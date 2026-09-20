@@ -323,7 +323,7 @@ def load_and_verify_prompts(
 
 
 def verify_training_recipe(manifest, config, row):
-    """Check the recipe without comparing learned parameters to a private run."""
+    """Check that a training manifest matches the configured training contract."""
     expected = {
         "contract": config["contract"],
         "serializer_version": config["serializer_version"],
@@ -341,7 +341,7 @@ def verify_training_recipe(manifest, config, row):
 
 
 def verify_training_manifest(adapter, config, row):
-    """Accept the user's own trained adapter, checking its recipe, not our weights."""
+    """Check a locally trained adapter and its training manifest."""
     adapter = Path(adapter).resolve()
     manifest = verify_training_recipe(
         read_json(adapter.parent.parent / "run_manifest.json"), config, row

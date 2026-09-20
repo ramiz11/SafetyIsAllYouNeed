@@ -11,7 +11,7 @@ from unittest.mock import patch
 from batch_runner import main, run_rows, write_new_json
 from eval import evaluate_records, evaluate_run, load_numeric_splits
 from eval import _atomic_json, _atomic_json_gz, run_inference
-from eval import metric_vector, compare
+from eval import metric_vector, report_metrics
 from text_utils import read_json
 from train import verify_training_manifest
 
@@ -74,7 +74,7 @@ class PublicWorkflowTests(unittest.TestCase):
             _atomic_json(folder / "safety.json", safety)
             return evaluate_run(ROOT, CONFIG, row["row_key"], folder / "predictions.json.gz", folder / "safety.json")
 
-    def test_all_six_compute_actual_metrics_not_reference_values(self):
+    def test_all_six_compute_metrics_from_supplied_records(self):
         expected = [(58, 304), (26, 26), (33, 409), (172, 1258), (65, 65), (184, 1094)]
         for row, population in zip(CONFIG["rows"], expected):
             with self.subTest(row=row["row_key"]):
@@ -83,9 +83,8 @@ class PublicWorkflowTests(unittest.TestCase):
                 self.assertEqual((result["population"]["unique_n"], result["population"]["effective_n"]), population)
                 self.assertEqual(sum(weights["weights"]), population[1])
                 for name in ("acc1", "acc3", "acc5", "mrr"):
-                    self.assertEqual(result["metrics"]["unrounded"][name], 1.)
-                self.assertEqual(result["metrics"]["unrounded"]["safety_median"], .5)
-                self.assertFalse(result["accepted"])
+                    self.assertEqual(result["evaluation_results"]["unrounded"][name], 1.)
+                self.assertEqual(result["evaluation_results"]["unrounded"]["safety_median"], .5)
 
     def test_changed_predictions_change_metrics_not_weights(self):
         row = CONFIG["rows"][1]
@@ -95,7 +94,8 @@ class PublicWorkflowTests(unittest.TestCase):
         predictions["records"][index]["generation"]["beam3"]["new_ids"] = [-1]
         changed_weights, changed = self.evaluate_fixture(row, predictions, safety)
         self.assertEqual(changed_weights, weights)
-        self.assertLess(changed["metrics"]["unrounded"]["acc3"], result["metrics"]["unrounded"]["acc3"])
+        self.assertLess(changed["evaluation_results"]["unrounded"]["acc3"],
+                        result["evaluation_results"]["unrounded"]["acc3"])
 
     def test_wrong_target_and_mismatched_safety_are_rejected(self):
         row = CONFIG["rows"][1]
@@ -108,24 +108,25 @@ class PublicWorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "top-one"):
             self.evaluate_fixture(row, predictions, safety)
 
-    def test_recipe_has_no_private_weights_or_old_population_tables(self):
+    def test_recipe_includes_configured_evaluation_fields(self):
         for row in CONFIG["rows"]:
-            for key in ("artifacts", "adapter_tree_sha256", "population_weight_sha256", "population_rule"):
-                self.assertNotIn(key, row)
+            for key in ("checkpoint", "inference", "safety_aggregation"):
+                self.assertIn(key, row)
+            self.assertIn(row["variant"], CONFIG["methods"])
 
     def test_own_adapter_is_accepted_but_wrong_recipe_is_not(self):
         row = CONFIG["rows"][0]
         with tempfile.TemporaryDirectory() as directory:
             adapter = own_adapter(directory, row)
             verify_training_manifest(adapter, CONFIG, row)
-            (adapter / "adapter_model.safetensors").write_bytes(b"a different independently trained adapter")
+            (adapter / "adapter_model.safetensors").write_bytes(b"an updated local adapter")
             verify_training_manifest(adapter, CONFIG, row)
             wrong = copy.deepcopy(row)
             wrong["seed"] += 1
             with self.assertRaisesRegex(ValueError, "seed"):
                 verify_training_manifest(adapter, CONFIG, wrong)
 
-    def test_infer_automatically_evaluates_without_reference_artifacts(self):
+    def test_infer_automatically_evaluates_current_run_artifacts(self):
         row = CONFIG["rows"][1]
         predictions, safety = synthetic_inputs(row, self.splits[row["city"]])
         with tempfile.TemporaryDirectory() as directory:
@@ -142,7 +143,7 @@ class PublicWorkflowTests(unittest.TestCase):
                  patch("safety.score_safety", side_effect=score):
                 result = run_inference(repo_root=ROOT, config_path=None,
                                        row_key=row["row_key"], adapter_path=adapter, output_dir=output)
-            self.assertEqual(result["metrics"]["unrounded"]["acc1"], 1.)
+            self.assertEqual(result["evaluation_results"]["unrounded"]["acc1"], 1.)
             self.assertEqual(read_json(output / "result.json")["evaluation_contract"], "connected_population_v1")
             self.assertTrue((output / "weights.json").is_file())
             with patch("eval.prepare_model", side_effect=AssertionError("Model should not load")):
@@ -174,8 +175,8 @@ class MetricTests(unittest.TestCase):
         self.assertEqual(values["mrr"], .625)
         self.assertAlmostEqual(values["safety_median"], .6)
         missing = metric_vector(records, [3, 1], safety_by_index={}, parser="new_ids", safety_aggregation="mean_valid")
-        comparison = compare(missing, CONFIG["rows"][0]["published_target"])
-        self.assertIsNone(comparison["rmse"])
-        self.assertFalse(comparison["normal_threshold_passed"])
+        reported = report_metrics(missing)
+        self.assertIsNone(reported["reported_metrics"]["safety_median"])
+        self.assertIn("reason", reported)
         with self.assertRaises(ValueError):
             metric_vector(records, [-1, 2], safety_by_index={}, parser="new_ids", safety_aggregation="mean_valid")

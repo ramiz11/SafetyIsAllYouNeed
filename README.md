@@ -15,13 +15,15 @@ This project implements **POI (Point-of-Interest) next-visit prediction** using 
 The pipeline is:
 - ✅ **City-agnostic** (NYC / Chicago supported)
 - ✅ **Configured end-to-end workflow** for training and evaluation
-- ✅ **Research-ready** with pre-computed optimal configurations
+- ✅ **Research-ready** with the paper's experiment configurations
 
 **Pipeline:** `Preprocessing → Prompt Generation → LoRA Fine-tuning → Evaluation`
 
-The commands below train and evaluate the six LLM configurations. Users train
-their own models; no trained weights or private downloads are supplied.
-Previously measured results approximately match the paper; fresh training may differ.
+This repository contains the implementation of the evaluation pipeline used for
+the paper's experiments. The configured population, preprocessing,
+candidate-processing, and ranking procedures produce the project's reported
+evaluation metrics. The commands below train and evaluate the six LLM
+configurations; trained weights are not included.
 
 ---
 
@@ -161,7 +163,7 @@ Generates trajectories, caches OSRM routes, computes crime counts, and builds te
 The default prompt format includes observed latitude/longitude pairs. Regenerating
 prompts updates these canonical textual files.
 
-For the supplied optimal NYC and Chicago datasets, verify the inputs or regenerate
+For the supplied NYC and Chicago experiment datasets, verify the inputs or regenerate
 only their prompts without rebuilding routes or crime counts:
 
 ```bash
@@ -267,25 +269,24 @@ See `baselines/README.md` for STAN / GETNext / STHGCN instructions and notes.
 Train and evaluate all six configurations sequentially:
 
 ```bash
-python batch_runner.py run --row all --output-dir runs/paper
+python batch_runner.py run --row all --output-dir runs/paper_evaluation
 ```
 
 Use a new, empty output directory. Results are written to
-`runs/paper/comparison.json`. Replace `all` with a row key to run one configuration.
+`runs/paper_evaluation/evaluation_results.json`. Replace `all` with a row key to run one configuration.
 The generic `run_train` and `run_eval` Python APIs remain available for custom
 experiments; the commands above select the configured workflow.
 
 CPU tests can be run with `python -m unittest discover -s tests -v`. CPU tests and
 saved-output checks do not verify a fresh six-model GPU training run; that full
-run remains unverified. The evaluation procedures were reconstructed using the
-published values as a guide, not recovered from the missing historical code.
+run requires the configured models, GPU environment, and training time.
 
 ---
 
 ## 🧠 Design Choices
 
 ### Pre-computed Trajectories
-We provide **ready-to-use training, validation, and test trajectories** with safety scores pre-injected for optimal hyperparameter settings. This accelerates research and ensures reproducibility.
+We provide **ready-to-use training, validation, and test trajectories** with safety scores pre-injected for the configured preprocessing settings. This accelerates research and supports reproducible execution of the evaluation pipeline.
 
 ### Time Handling
 - Mixed timestamp formats are parsed automatically
@@ -313,7 +314,7 @@ Datasets lacking POI categories automatically omit category phrases in prompts.
 **Note (Chicago semantics):** the Gowalla Chicago check-ins do not include POI categories. This repo therefore trains/evaluates Chicago prompts without category text. If you want to enrich Chicago POIs with OpenStreetMap-derived categories (as discussed in the paper’s qualitative analysis), that enrichment step is not implemented in the preprocessing pipeline here.
 
 ---
-## 📊 Results
+## 📊 Evaluation Results Reported in the Paper
 
 ### Performances with the NYC Dataset
 

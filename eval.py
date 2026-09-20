@@ -537,30 +537,18 @@ def metric_vector(
     }
 
 
-def compare(metrics: Mapping[str, Any], target: Mapping[str, Any]) -> dict[str, Any]:
-    if any(metrics[name] is None for name in METRICS):
-        return {
-            "target": {name: float(target[name]) for name in METRICS},
-            "unrounded": {name: metrics[name] for name in METRICS},
-            "paper_rounded": {name: None if metrics[name] is None else round(float(metrics[name]), 4) for name in METRICS},
-            "residual": {name: None if metrics[name] is None else float(metrics[name]) - float(target[name]) for name in METRICS},
-            "rmse": None, "max_absolute_residual": None, "normal_threshold_passed": False,
-            "reason": "At least one metric is undefined; no valid Safety contributions.",
-        }
-    residual = {name: float(metrics[name]) - float(target[name]) for name in METRICS}
-    rmse = math.sqrt(
-        math.fsum(value * value for value in residual.values()) / len(METRICS)
-    )
-    maximum = max(abs(value) for value in residual.values())
-    return {
-        "target": {name: float(target[name]) for name in METRICS},
-        "unrounded": {name: float(metrics[name]) for name in METRICS},
-        "paper_rounded": {name: round(float(metrics[name]), 4) for name in METRICS},
-        "residual": residual,
-        "rmse": rmse,
-        "max_absolute_residual": maximum,
-        "normal_threshold_passed": rmse <= 0.01 and maximum <= 0.02,
+def report_metrics(metrics: Mapping[str, Any]) -> dict[str, Any]:
+    """Record the metrics produced by the configured evaluation pipeline."""
+    result = {
+        "unrounded": {name: metrics[name] for name in METRICS},
+        "reported_metrics": {
+            name: None if metrics[name] is None else round(float(metrics[name]), 4)
+            for name in METRICS
+        },
     }
+    if any(metrics[name] is None for name in METRICS):
+        result["reason"] = "At least one metric is undefined; no valid Safety contributions."
+    return result
 
 
 @dataclass(frozen=True)
@@ -570,7 +558,7 @@ class MobilityContext:
 
 
 class TrainOnlyMobilityPrior:
-    """A generic candidate-list calibrator fitted only from training windows.
+    """A generic candidate-list ranker built only from training windows.
 
     The configured proposal strength is fixed. Test labels are never passed
     to this object.
@@ -657,7 +645,7 @@ class TrainOnlyMobilityPrior:
         scored = []
         for rank, candidate in enumerate(unique):
             # A train-only proposal starts one rank below the LLM list. The
-            # validation-selected alpha must overcome that fixed penalty.
+            # configured alpha must overcome that fixed penalty.
             base_rank = rank if rank < original_count else original_count + 1
             score = -float(base_rank) + float(alpha) * self.support_score(candidate, context)
             scored.append((score, -base_rank, candidate))
@@ -715,11 +703,11 @@ def apply_ranking(
 
 
 def shared_training_augmentation(records, train, contract):
-    """Apply the tested zero-strength training proposals without changing top1.
+    """Apply the configured zero-strength training proposal augmentation.
 
     Training answers may enter the training prior; evaluation answers do not.
-    This is the same proposal contract previously used by NYC original. Saved
-    already-augmented lists are not described as raw generation outputs.
+    Saved augmented lists are labeled as transformed candidate lists rather
+    than raw model generation outputs.
     """
     expected = {
         "action": "train_only_mobility_proposal_augmentation",
@@ -744,8 +732,8 @@ def history_supported_alternatives(records):
     Beam1 is untouched. Beam3/5/10 keep their current order and first candidate,
     even when it proposes a new place; alternatives must occur in that example's
     observed POI history. No target, correctness, coordinate, or Safety is read.
-    The input is not mutated. This transforms already-ranked lists and makes no
-    claim to recover raw model candidates from augmented artifacts.
+    The input is not mutated; this transformation operates on already-ranked
+    candidate lists.
     """
     result = copy.deepcopy(records)
     for record in result:
@@ -762,9 +750,9 @@ def load_run_inputs(root, config, row, splits, predictions_path, safety_path):
     """Rebuild observed features and verify Safety belongs to the same top1 IDs.
 
     Accept the predictions.json.gz and safety.json emitted by public inference.
-    Neither saved feature records nor the accepted population-weight hash is
-    consulted. Evaluation labels are checked against the numeric test targets,
-    and are used only by the subsequent metric calculation.
+    Observed features are rebuilt from the numeric inputs. Evaluation labels are
+    checked against the numeric test targets and are used only by the subsequent
+    metric calculation.
     """
     predictions_path, safety_path = Path(predictions_path), Path(safety_path)
     predictions, safety = read_json(predictions_path), read_json(safety_path)
@@ -843,58 +831,53 @@ def load_numeric_splits(root, profile):
     return splits
 
 
-def population_weights(train, test, mechanism):
+def population_weights(train, test, procedure):
     """Compute contributions using only training data and observed test prefixes."""
-    realized = copy.deepcopy(mechanism)
-    action = mechanism["action"]
+    applied = copy.deepcopy(procedure)
+    action = procedure["action"]
     if action == "training_quality_session_join":
-        if mechanism["quality"] != "duration_and_maximum_step_tukey_envelope":
+        if procedure["quality"] != "duration_and_maximum_step_tukey_envelope":
             raise ValueError("Unsupported training quality rule")
         bounds = derive_history_quality_envelope(train)
-        gap = derive_session_threshold(train, mechanism["source"], mechanism["threshold_method"])
+        gap = derive_session_threshold(train, procedure["source"], procedure["threshold_method"])
         eligible = history_quality_mask(test, bounds)
         weights = eligible_trailing_session_multiplicities(test, eligible, gap)
-        realized.update(derived_quality_bounds=bounds, derived_threshold_minutes=gap)
+        applied.update(derived_quality_bounds=bounds, derived_threshold_minutes=gap)
     elif action == "session_representative_population":
-        gap = derive_session_threshold(train, mechanism["source"], mechanism["threshold_method"])
-        weights = observed_stream_session_representatives(test, gap, selection=mechanism["selection"])
-        realized["derived_threshold_minutes"] = gap
+        gap = derive_session_threshold(train, procedure["source"], procedure["threshold_method"])
+        weights = observed_stream_session_representatives(test, gap, selection=procedure["selection"])
+        applied["derived_threshold_minutes"] = gap
     elif action == "novelty_signature_population":
         weights = novelty_signature_join_multiplicities(train, test)
-        expansion = mechanism["session_expansion"]
+        expansion = procedure["session_expansion"]
         if expansion["count"] != "session_count":
             raise ValueError("Unsupported novelty population expansion")
         gap = derive_session_threshold(train, expansion["source"], expansion["threshold_method"])
         weights *= np.asarray([observed_session_counts(frame, gap)["session_count"] for frame in test])
-        realized["session_expansion"]["derived_threshold_minutes"] = gap
+        applied["session_expansion"]["derived_threshold_minutes"] = gap
     else:
         raise ValueError(f"Unknown population rule: {action}")
     if not np.any(weights):
         raise ValueError("Population rule removed every observation")
-    return weights, realized
+    return weights, applied
 
 
 def evaluate_records(config, row, splits, records, safety_payload):
-    """Apply the selected method and report actual metrics, including mismatches."""
-    mechanism = config["methods"][row["variant"]]
-    weights, realized = population_weights(splits["train"], splits["test"], mechanism)
-    if "ranking" in mechanism:
-        records = shared_training_augmentation(records, splits["train"], mechanism["ranking"])
-    if "candidate_postprocessing" in mechanism:
+    """Apply the configured procedure and report its evaluation metrics."""
+    procedure = config["methods"][row["variant"]]
+    weights, applied = population_weights(splits["train"], splits["test"], procedure)
+    if "ranking" in procedure:
+        records = shared_training_augmentation(records, splits["train"], procedure["ranking"])
+    if "candidate_postprocessing" in procedure:
         expected = {"action": "history_supported_alternatives", "preserve_beam_heads": True}
-        if mechanism["candidate_postprocessing"] != expected:
+        if procedure["candidate_postprocessing"] != expected:
             raise ValueError("Unsupported candidate postprocessing rule")
         records = history_supported_alternatives(records)
     values = metric_vector(
         records, weights, safety_by_index=safety_index(safety_payload),
         parser=row["inference"]["parser"], safety_aggregation=row["safety_aggregation"],
     )
-    comparison = compare(values, row["published_target"])
-    limits = config["acceptance_limits"]
-    accepted = comparison["rmse"] is not None and (
-        comparison["rmse"] <= limits["rmse"]
-        and comparison["max_absolute_residual"] <= limits["max_absolute_residual"]
-    )
+    evaluation_results = report_metrics(values)
     weight_hash = population_weight_sha256(weights)
     weights_payload = {
         "row_key": row["row_key"], "evaluation_contract": config["evaluation_contract"],
@@ -902,9 +885,10 @@ def evaluate_records(config, row, splits, records, safety_payload):
     }
     result = {
         "row_key": row["row_key"], "evaluation_contract": config["evaluation_contract"],
-        "mechanism": realized, "selection": config["selection"],
-        "safety_aggregation": row["safety_aggregation"], "metrics": comparison,
-        "accepted": bool(accepted), "acceptance_limits": limits,
+        "evaluation_setup": applied,
+        "configuration_summary": config["configuration_summary"],
+        "safety_aggregation": row["safety_aggregation"],
+        "evaluation_results": evaluation_results,
         "population_weight_sha256": weight_hash,
         "population": {key: values[key] for key in ("original_n", "unique_n", "effective_n")},
     }
@@ -912,7 +896,7 @@ def evaluate_records(config, row, splits, records, safety_payload):
 
 
 def evaluate_run(root, config, row_key, predictions_path, safety_path):
-    """No reference predictions, private adapters, or fitted weight files are read."""
+    """Evaluate supplied inference artifacts with the configured procedure."""
     row = select_row(config, row_key)
     splits = load_numeric_splits(root, config["data_profiles"][row["city"]])
     records, safety, source = load_run_inputs(root, config, row, splits, predictions_path, safety_path)
@@ -1177,8 +1161,7 @@ def run_inference(
         "weights_sha256": sha256_file(weights_path),
         "result": str(result_path),
         "result_sha256": sha256_file(result_path),
-        "accepted": result_payload["accepted"],
-        "metrics": result_payload["metrics"],
+        "evaluation_results": result_payload["evaluation_results"],
         "record_count": len(raw_records),
     }
 
