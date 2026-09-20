@@ -5,7 +5,7 @@ __pycache__/
 .cursor/
 *.iml
 
-# Private research material and local run outputs are not publication assets.
+# Local development artifacts and generated run outputs.
 /archival/
 /tmp/
 /.codex*/
