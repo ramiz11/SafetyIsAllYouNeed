@@ -13,10 +13,12 @@ for per-row precision, seeds, checkpoint steps and inference settings.
 
 ## Train, infer and evaluate
 
+The NYC configuration selects trajectory length 20, crime radius 500 m, and crime window 4 weeks automatically.
+
 ```bash
 python baselines/llm4poi/run_llm4poi_baseline.py \
-  --mode both --dataset CHICAGO --variant llm4poi_original \
-  --run-dir runs/chicago_original
+  --mode both --dataset NYC --variant llm4poi_original \
+  --run-dir runs/nyc_original
 ```
 
 Switch to `--variant llm4poi_31` for the Llama-3.1 baseline. Use `--mode train`
