@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from batch_runner import main as reproduction_main
+from batch_runner import main as batch_main
 from configs import preprocessing_config as pc
 from train import select_row
 
@@ -59,7 +59,7 @@ def main(argv=None):
     else:
         adapter = args.adapter or row_dir / "training" / "checkpoints" / f"checkpoint-{row['checkpoint']['step']}"
         forwarded += ["--adapter", str(adapter), "--output-dir", str(args.output_dir or row_dir / "evaluation")]
-    return reproduction_main(forwarded)
+    return batch_main(forwarded)
 
 
 if __name__ == "__main__":

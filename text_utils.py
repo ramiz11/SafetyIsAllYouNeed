@@ -158,9 +158,9 @@ def build_prompt(
 
     - Uses 'local_time' if present, else falls back to 'event_time_utc'.
     - Uses NYC 'poi_category_name' or generic 'category' if available; otherwise omits.
-    - ``coordinate_free_v1`` retains the historical coordinate-free text.
+    - ``coordinate_free_v1`` retains the coordinate-free prompt text.
     - ``coordinate_pairs_v2`` appends each observed row's own coordinate pair.
-    - Note: We don't inject address text into the prompt (keeps parity with the paper).
+    - Address text is not included in the configured prompt.
     """
     if prompt_contract not in PROMPT_CONTRACTS:
         raise ValueError(f"Unknown prompt contract: {prompt_contract}")

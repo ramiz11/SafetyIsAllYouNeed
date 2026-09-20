@@ -37,7 +37,7 @@ class PopulationMechanismTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             observed_session_counts(trajectory(), float("nan"))
 
-    def test_training_cadence_and_unique_edge_calibration(self):
+    def test_training_cadence_and_unique_edge_threshold_derivation(self):
         frames = [trajectory(), trajectory()]
         self.assertEqual(derive_session_threshold(frames, "window_gaps", "quartile_3"), 35.0)
         self.assertEqual(derive_session_threshold(frames, "unique_edges", "quartile_3"), 27.5)

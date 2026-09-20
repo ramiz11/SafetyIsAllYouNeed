@@ -104,7 +104,7 @@ class TrainingOrchestrationTests(unittest.TestCase):
             inferred.append(kwargs["row_key"])
             self.assertTrue(str(kwargs["adapter_path"]).endswith("my-own-checkpoint"))
             output = Path(kwargs["output_dir"]) / "result.json"
-            write_new_json(output, {"row_key": kwargs["row_key"], "accepted": False, "test_fixture": True})
+            write_new_json(output, {"row_key": kwargs["row_key"], "test_fixture": True})
             return {"result": str(output)}
         with tempfile.TemporaryDirectory() as directory, \
              patch("train.run_training", side_effect=train), \
@@ -113,11 +113,11 @@ class TrainingOrchestrationTests(unittest.TestCase):
             report = run_rows(ROOT, CONFIG_PATH, CONFIG, CONFIG["rows"], directory)
             self.assertEqual(trained, [r["row_key"] for r in CONFIG["rows"]])
             self.assertEqual(inferred, trained)
-            self.assertFalse(report["all_rows_within_limits"])
-            self.assertEqual(len(read_json(Path(directory) / "comparison.json")["rows"]), 6)
+            self.assertEqual(len(report["rows"]), 6)
+            self.assertEqual(len(read_json(Path(directory) / "evaluation_results.json")["rows"]), 6)
 
     def test_baseline_wrapper_delegates_to_public_recipe(self):
-        with patch("baselines.llm4poi.run_llm4poi_baseline.reproduction_main") as run:
+        with patch("baselines.llm4poi.run_llm4poi_baseline.batch_main") as run:
             baseline_main(["--dataset", "NYC", "--variant", "llm4poi_31", "--mode", "both", "--run-dir", "unused"])
             forwarded = run.call_args.args[0]
             self.assertEqual(forwarded[0], "run")

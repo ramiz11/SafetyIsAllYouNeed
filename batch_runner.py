@@ -58,9 +58,12 @@ def run_rows(root, config_path, config, rows, output_dir):
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    report = {"evaluation_contract": config["evaluation_contract"], "rows": results,
-              "all_rows_within_limits": all(row["accepted"] for row in results)}
-    write_new_json(output / "comparison.json", report)
+    report = {
+        "evaluation_contract": config["evaluation_contract"],
+        "configuration_summary": config["configuration_summary"],
+        "rows": results,
+    }
+    write_new_json(output / "evaluation_results.json", report)
     return report
 
 
@@ -119,7 +122,7 @@ def main(argv=None, *, command=None):
 
 
 def run_preprocessing_grid(dataset="CHICAGO", base_dir="."):
-    """Run the original preprocessing parameter sweep explicitly."""
+    """Run the configured preprocessing parameter sweep explicitly."""
     import run_preprocessing
     for traj_len in (25, 20, 150, 10):
         for radius in (1000, 750, 500, 250):

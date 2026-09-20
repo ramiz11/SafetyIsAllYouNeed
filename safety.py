@@ -306,9 +306,7 @@ def aggregate_safety(
     aggregation: str,
 ) -> dict:
     valid = [float(value) for value in scores if value is not None]
-    # ``statistics.fmean`` was only added in Python 3.8.  The publication
-    # repository still declares/supports a Python 3.7-era environment, and
-    # these inputs are already normalized to ``float`` above.
+    # Compute the mean directly from the normalized float values above.
     mean = sum(valid) / len(valid) if valid else None
     median = statistics.median(valid) if valid else None
     if aggregation == "median":
@@ -490,8 +488,8 @@ def score_safety(
             rows.append({"index": index, "prediction": prediction, "status": "invalid_poi"})
             scores.append(None)
             continue
-        # This historical post-inference definition uses the held-out visit as
-        # route origin. It is never used in a prompt, ranker, or generation.
+        # The configured post-inference Safety calculation uses the held-out
+        # visit as route origin. It is never used in a prompt, ranker, or generation.
         origin = frame.iloc[-1]
         start = (float(origin.longitude), float(origin.latitude))
         destination = poi_map[prediction]
