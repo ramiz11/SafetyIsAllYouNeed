@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+BASELINE_CONFIG = Path(__file__).resolve().with_name("config.json")
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -36,7 +37,8 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     row_key = f"{args.dataset}|{args.variant}"
-    config = pc.load_model_config(Path(args.base_dir) / args.config if args.config else None)
+    config_path = Path(args.base_dir) / args.config if args.config else BASELINE_CONFIG
+    config = pc.load_model_config(config_path)
     row = select_row(config, row_key)
     for name in ("seed", "base_precision"):
         if getattr(args, name) is not None and getattr(args, name) != row[name]:
@@ -46,8 +48,7 @@ def main(argv=None):
     row_dir = args.run_dir / row_key.replace("|", "_")
     command = {"train": "train", "eval": "infer", "both": "run"}[args.mode]
     forwarded = [command, "--repo-root", args.base_dir, "--row", row_key]
-    if args.config:
-        forwarded += ["--config", args.config]
+    forwarded += ["--config", str(config_path)]
     if args.mode == "both":
         if args.adapter or args.output_dir:
             parser.error("--mode both trains its own adapter and uses --run-dir")

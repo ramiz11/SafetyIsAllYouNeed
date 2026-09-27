@@ -95,7 +95,7 @@ class TrainingOrchestrationTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 run_training(repo_root=ROOT, config_path=CONFIG_PATH, row_key=row["row_key"], output_dir=directory)
 
-    def test_all_six_runner_uses_new_training_outputs(self):
+    def test_main_runner_uses_both_proposed_method_rows(self):
         trained, inferred = [], []
         def train(**kwargs):
             trained.append(kwargs["row_key"])
@@ -113,8 +113,8 @@ class TrainingOrchestrationTests(unittest.TestCase):
             report = run_rows(ROOT, CONFIG_PATH, CONFIG, CONFIG["rows"], directory)
             self.assertEqual(trained, [r["row_key"] for r in CONFIG["rows"]])
             self.assertEqual(inferred, trained)
-            self.assertEqual(len(report["rows"]), 6)
-            self.assertEqual(len(read_json(Path(directory) / "evaluation_results.json")["rows"]), 6)
+            self.assertEqual(len(report["rows"]), 2)
+            self.assertEqual(len(read_json(Path(directory) / "evaluation_results.json")["rows"]), 2)
 
     def test_baseline_wrapper_delegates_to_public_recipe(self):
         with patch("baselines.llm4poi.run_llm4poi_baseline.batch_main") as run:
@@ -122,4 +122,9 @@ class TrainingOrchestrationTests(unittest.TestCase):
             forwarded = run.call_args.args[0]
             self.assertEqual(forwarded[0], "run")
             self.assertIn("NYC|llm4poi_31", forwarded)
+            config_index = forwarded.index("--config") + 1
+            self.assertEqual(
+                Path(forwarded[config_index]).resolve(),
+                ROOT / "baselines/llm4poi/config.json",
+            )
             self.assertNotIn("--seed", forwarded)

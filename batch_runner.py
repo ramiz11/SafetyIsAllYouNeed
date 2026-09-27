@@ -75,7 +75,10 @@ def main(argv=None, *, command=None):
         parser.set_defaults(command=command)
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument("--config", type=Path, default=None)
-    parser.add_argument("--row", help="CITY|variant, or all for the run command")
+    parser.add_argument(
+        "--row",
+        help="CITY|our_method, or all to run the proposed method for both cities",
+    )
     parser.add_argument("--adapter", type=Path, help="Your locally trained checkpoint directory")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--resume-from-checkpoint")

@@ -19,11 +19,8 @@ The pipeline is:
 
 **Pipeline:** `Preprocessing → Prompt Generation → LoRA Fine-tuning → Evaluation`
 
-This repository contains the implementation of the evaluation pipeline used for
-the paper's experiments. The configured population, preprocessing,
-candidate-processing, and ranking procedures produce the project's reported
-evaluation metrics. The commands below train and evaluate the six LLM
-configurations; trained weights are not included.
+This repository contains the implementation of the proposed method's evaluation
+pipeline for NYC and Chicago. Trained weights are not included.
 
 ---
 
@@ -110,9 +107,9 @@ hf auth login
 
 ## ⚙️ Configuration
 
-Preprocessing settings and the six LLM configurations (`MODEL_CONFIG`) live in
-`configs/preprocessing_config.py`. Accept the applicable Hugging Face licenses
-for the configured Llama-3.1 and Llama-2/LongLoRA base models before training.
+Preprocessing settings and the two proposed-method city configurations
+(`MODEL_CONFIG`) live in `configs/preprocessing_config.py`. Accept the applicable
+Hugging Face license for the configured Llama-3.1 model before training.
 
 ### Key Parameters
 
@@ -171,9 +168,8 @@ python batch_runner.py check
 python batch_runner.py prompts
 ```
 
-Each input contains 19 observed check-ins with their own coordinates; the 20th
-POI is the training answer. Our Method also includes the 18 observed transition
-Safety scores. Neither LLM4POI variant includes Safety in its prompt.
+Each input contains 19 observed check-ins with their own coordinates and 18
+observed transition Safety scores; the 20th POI is the training answer.
 
 These generated files should be interpreted as joint mobility-safety artifacts rather than raw check-in exports: they combine user trajectories with crime-derived route statistics and safety annotations computed during preprocessing.
 
@@ -205,9 +201,9 @@ python train.py --row 'NYC|our_method' --output-dir runs/nyc_training
 Checkpoints are saved under `runs/nyc_training/checkpoints/`. To resume the same
 run, add `--resume-from-checkpoint /path/to/checkpoint-N`.
 
-Row keys combine `NYC` or `CHICAGO` with `our_method`, `llm4poi_31`, or
-`llm4poi_original`, separated by `|`. Seeds, training steps, selected checkpoints,
-precision and inference settings are defined in `MODEL_CONFIG`.
+The available row keys are `NYC|our_method` and `CHICAGO|our_method`. Seeds, training
+steps, selected checkpoints, precision, and inference settings are defined in
+`MODEL_CONFIG`.
 
 ---
 
@@ -234,52 +230,23 @@ python batch_runner.py evaluate --row 'NYC|our_method' \
 
 ---
 
-### 4. Baselines
-
-This repository also includes baseline implementations under `baselines/` and a helper
-script to export baseline-specific inputs.
-
-```bash
-python scripts/export_baseline_inputs.py \
-  --dataset CHICAGO \
-  --traj-len 20 \
-  --crime-radius 1000 \
-  --crime-time-weeks 3 \
-  --base-dir /absolute/path/to/SafetyIsAllYouNeed \
-  --baseline all
-```
-
-LLM4POI (pre‑3.1) baseline:
-
-```bash
-python baselines/llm4poi/run_llm4poi_baseline.py \
-  --mode both \
-  --dataset CHICAGO \
-  --variant llm4poi_original \
-  --base-dir /absolute/path/to/SafetyIsAllYouNeed \
-  --run-dir runs/chicago_original
-```
-
-See `baselines/README.md` for STAN / GETNext / STHGCN instructions and notes.
-
----
-
 ### Batch Experiments
 
-Train and evaluate all six configurations sequentially:
+Train and evaluate both configured cities sequentially:
 
 ```bash
-python batch_runner.py run --row all --output-dir runs/paper_evaluation
+python batch_runner.py run --row all --output-dir runs/our_method_evaluation
 ```
 
 Use a new, empty output directory. Results are written to
-`runs/paper_evaluation/evaluation_results.json`. Replace `all` with a row key to run one configuration.
+`runs/our_method_evaluation/evaluation_results.json`. Replace `all` with
+`NYC|our_method` or `CHICAGO|our_method` to run one city.
 The generic `run_train` and `run_eval` Python APIs remain available for custom
 experiments; the commands above select the configured workflow.
 
 CPU tests can be run with `python -m unittest discover -s tests -v`. CPU tests and
-saved-output checks do not verify a fresh six-model GPU training run; that full
-run requires the configured models, GPU environment, and training time.
+saved-output checks do not verify fresh GPU training runs; those require the
+configured models, GPU environment, and training time.
 
 ---
 

@@ -1,11 +1,8 @@
 
 # Baselines
 
-This folder contains baseline implementations and helpers used in the paper. They run the baseline evaluations using the **same trajectories and safety-score computation** as the main pipeline.
-
-For the six LLM configurations, follow [the training and evaluation instructions](../README.md#2-model-training).
-Users train their own models, then run the shared public inference/evaluation
-code. Prompts include observed coordinates and omit held-out attributes.
+This folder contains the baseline implementations and external-repository helpers
+used in the paper.
 
 ## Coverage (what the paper mentions)
 

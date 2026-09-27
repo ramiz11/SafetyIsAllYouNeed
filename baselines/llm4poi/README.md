@@ -1,15 +1,15 @@
 # LLM4POI baselines
 
-Both no-Safety variants use the shared [training and evaluation pipeline](../../README.md#2-model-training).
-Users train their own LoRA adapters; no trained checkpoint download is supplied.
+Both no-Safety variants use the recipes in `config.json`. Users train their own
+LoRA adapters; no trained checkpoint download is supplied.
 
 - `llm4poi_original`: the configured Llama-2/LongLoRA base model.
 - `llm4poi_31`: Llama-3.1-8B-Instruct.
 
 Both receive the 19 observed check-ins, including row-level coordinates, with
 the 20th POI as the training answer. Neither receives transition Safety in the
-prompt or uses the key-query similarity module. See the central configuration
-for per-row precision, seeds, checkpoint steps and inference settings.
+prompt or uses the key-query similarity module. See `config.json` for per-row
+precision, seeds, checkpoint steps, population rules, and inference settings.
 
 ## Train, infer and evaluate
 

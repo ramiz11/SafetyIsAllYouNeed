@@ -1,0 +1,135 @@
+{
+  "extends": "default",
+  "configuration_summary": "Defines the frozen LLM4POI baseline recipes, population construction, candidate processing, ranking, and Safety aggregation used by the paper evaluation pipeline.",
+  "models": {
+    "llama2_longlora": {
+      "id": "Yukang/Llama-2-7b-longlora-32k-ft",
+      "revision": "ab48674ffc55568ffe2a1207ef0e711c2febbaaf"
+    }
+  },
+  "rows": [
+    {
+      "row_key": "NYC|llm4poi_31",
+      "city": "NYC",
+      "variant": "llm4poi_31",
+      "prompt_variant": "no_safety",
+      "model": "llama31",
+      "seed": 7,
+      "base_precision": "bnb_default",
+      "checkpoint": {
+        "step": 5500,
+        "train_stop_step": 6000,
+        "selection": "configured_step",
+        "selection_basis": "minimum_validation_loss"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [1, 3, 5, 10],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_zero_fill"
+    },
+    {
+      "row_key": "NYC|llm4poi_original",
+      "city": "NYC",
+      "variant": "llm4poi_original",
+      "prompt_variant": "no_safety",
+      "model": "llama2_longlora",
+      "seed": 42,
+      "base_precision": "bnb_default",
+      "checkpoint": {
+        "step": 8000,
+        "train_stop_step": 8000,
+        "selection": "configured_step",
+        "selection_basis": "fixed_evaluation_configuration"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [1, 3, 5, 10],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_valid"
+    },
+    {
+      "row_key": "CHICAGO|llm4poi_31",
+      "city": "CHICAGO",
+      "variant": "llm4poi_31",
+      "prompt_variant": "no_safety",
+      "model": "llama31",
+      "seed": 42,
+      "base_precision": "nf4",
+      "checkpoint": {
+        "step": 3000,
+        "train_stop_step": 3000,
+        "selection": "configured_step",
+        "selection_basis": "fixed_evaluation_configuration"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [1, 3, 5, 10],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_zero_fill"
+    },
+    {
+      "row_key": "CHICAGO|llm4poi_original",
+      "city": "CHICAGO",
+      "variant": "llm4poi_original",
+      "prompt_variant": "no_safety",
+      "model": "llama2_longlora",
+      "seed": 42,
+      "base_precision": "bnb_default",
+      "checkpoint": {
+        "step": 12500,
+        "train_stop_step": 19944,
+        "selection": "configured_step",
+        "selection_basis": "minimum_validation_loss"
+      },
+      "inference": {
+        "batch_size": 1,
+        "max_new_tokens": 128,
+        "beam_widths": [1, 3, 5, 10],
+        "beam_calls": "independent",
+        "do_sample": false,
+        "parser": "new_ids"
+      },
+      "safety_aggregation": "mean_zero_fill"
+    }
+  ],
+  "methods": {
+    "llm4poi_31": {
+      "action": "session_representative_population",
+      "source": "window_gaps",
+      "threshold_method": "quartile_3",
+      "selection": "first"
+    },
+    "llm4poi_original": {
+      "action": "novelty_signature_population",
+      "session_expansion": {
+        "source": "window_gaps",
+        "threshold_method": "quartile_3",
+        "count": "session_count"
+      },
+      "ranking": {
+        "action": "train_only_mobility_proposal_augmentation",
+        "alphas": {"1": 0, "3": 0, "5": 0, "10": 0},
+        "augment_beams": [3, 5, 10],
+        "proposal_limit": 10,
+        "target_use": "none"
+      },
+      "candidate_postprocessing": {
+        "action": "history_supported_alternatives",
+        "preserve_beam_heads": true
+      }
+    }
+  }
+}

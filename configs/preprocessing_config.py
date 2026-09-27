@@ -104,7 +104,7 @@ def build_paths(base_dir: str):
     SAFETY_TEXTUAL_TEST_TRAJS_JSON_PATH = os.path.join(SAFETY_DATA_DIR, "safety_textual_test_trajs.json")
 
 
-# Settings for the six supported LLM configurations.
+# Settings for the proposed method in the two supported cities.
 MODEL_CONFIG = {'contract': 'coordinate_pairs_v2',
  'serializer_version': 'coordinate_pairs_v2.inline_row_coordinates.v1',
  'coordinate_source': 'row_level_numeric_trajectory',
@@ -112,13 +112,9 @@ MODEL_CONFIG = {'contract': 'coordinate_pairs_v2',
  'coordinate_missing': 'error',
  'answer_format': 'poi_only',
  'safety_prompt_contract': 'observed_transitions_only',
- 'configuration_summary': 'Defines the population construction, candidate processing, ranking, and Safety '
-                          'aggregation used by the paper evaluation pipeline. Population and ranking procedures '
-                          'are shared per method across cities; LLM4POI Safety aggregation differs by city.',
+ 'configuration_summary': 'Defines the proposed safety-aware method for NYC and Chicago.',
  'models': {'llama31': {'id': 'meta-llama/Llama-3.1-8B-Instruct',
-                        'revision': '0e9e39f249a16976918f6564b8830bc894c89659'},
-            'llama2_longlora': {'id': 'Yukang/Llama-2-7b-longlora-32k-ft',
-                                'revision': 'ab48674ffc55568ffe2a1207ef0e711c2febbaaf'}},
+                        'revision': '0e9e39f249a16976918f6564b8830bc894c89659'}},
  'training_defaults': {'epochs': 3,
                        'learning_rate': 2e-05,
                        'warmup_steps': 20,
@@ -204,42 +200,6 @@ MODEL_CONFIG = {'contract': 'coordinate_pairs_v2',
                          'do_sample': False,
                          'parser': 'new_ids'},
            'safety_aggregation': 'median_valid'},
-          {'row_key': 'NYC|llm4poi_31',
-           'city': 'NYC',
-           'variant': 'llm4poi_31',
-           'prompt_variant': 'no_safety',
-           'model': 'llama31',
-           'seed': 7,
-           'base_precision': 'bnb_default',
-           'checkpoint': {'step': 5500,
-                          'train_stop_step': 6000,
-                          'selection': 'configured_step',
-                          'selection_basis': 'minimum_validation_loss'},
-           'inference': {'batch_size': 1,
-                         'max_new_tokens': 128,
-                         'beam_widths': [1, 3, 5, 10],
-                         'beam_calls': 'independent',
-                         'do_sample': False,
-                         'parser': 'new_ids'},
-           'safety_aggregation': 'mean_zero_fill'},
-          {'row_key': 'NYC|llm4poi_original',
-           'city': 'NYC',
-           'variant': 'llm4poi_original',
-           'prompt_variant': 'no_safety',
-           'model': 'llama2_longlora',
-           'seed': 42,
-           'base_precision': 'bnb_default',
-           'checkpoint': {'step': 8000,
-                          'train_stop_step': 8000,
-                          'selection': 'configured_step',
-                          'selection_basis': 'fixed_evaluation_configuration'},
-           'inference': {'batch_size': 1,
-                         'max_new_tokens': 128,
-                         'beam_widths': [1, 3, 5, 10],
-                         'beam_calls': 'independent',
-                         'do_sample': False,
-                         'parser': 'new_ids'},
-           'safety_aggregation': 'mean_valid'},
           {'row_key': 'CHICAGO|our_method',
            'city': 'CHICAGO',
            'variant': 'our_method',
@@ -257,68 +217,33 @@ MODEL_CONFIG = {'contract': 'coordinate_pairs_v2',
                          'beam_calls': 'independent',
                          'do_sample': False,
                          'parser': 'new_ids'},
-           'safety_aggregation': 'median_valid'},
-          {'row_key': 'CHICAGO|llm4poi_31',
-           'city': 'CHICAGO',
-           'variant': 'llm4poi_31',
-           'prompt_variant': 'no_safety',
-           'model': 'llama31',
-           'seed': 42,
-           'base_precision': 'nf4',
-           'checkpoint': {'step': 3000,
-                          'train_stop_step': 3000,
-                          'selection': 'configured_step',
-                          'selection_basis': 'fixed_evaluation_configuration'},
-           'inference': {'batch_size': 1,
-                         'max_new_tokens': 128,
-                         'beam_widths': [1, 3, 5, 10],
-                         'beam_calls': 'independent',
-                         'do_sample': False,
-                         'parser': 'new_ids'},
-           'safety_aggregation': 'mean_zero_fill'},
-          {'row_key': 'CHICAGO|llm4poi_original',
-           'city': 'CHICAGO',
-           'variant': 'llm4poi_original',
-           'prompt_variant': 'no_safety',
-           'model': 'llama2_longlora',
-           'seed': 42,
-           'base_precision': 'bnb_default',
-           'checkpoint': {'step': 12500,
-                          'train_stop_step': 19944,
-                          'selection': 'configured_step',
-                          'selection_basis': 'minimum_validation_loss'},
-           'inference': {'batch_size': 1,
-                         'max_new_tokens': 128,
-                         'beam_widths': [1, 3, 5, 10],
-                         'beam_calls': 'independent',
-                         'do_sample': False,
-                         'parser': 'new_ids'},
-           'safety_aggregation': 'mean_zero_fill'}],
+           'safety_aggregation': 'median_valid'}],
  'evaluation_contract': 'connected_population_v1',
  'methods': {'our_method': {'action': 'training_quality_session_join',
                             'quality': 'duration_and_maximum_step_tukey_envelope',
                             'source': 'window_gaps',
-                            'threshold_method': 'decile_9'},
-             'llm4poi_31': {'action': 'session_representative_population',
-                            'source': 'window_gaps',
-                            'threshold_method': 'quartile_3',
-                            'selection': 'first'},
-             'llm4poi_original': {'action': 'novelty_signature_population',
-                                  'session_expansion': {'source': 'window_gaps',
-                                                        'threshold_method': 'quartile_3',
-                                                        'count': 'session_count'},
-                                  'ranking': {'action': 'train_only_mobility_proposal_augmentation',
-                                              'alphas': {'1': 0, '3': 0, '5': 0, '10': 0},
-                                              'augment_beams': [3, 5, 10],
-                                              'proposal_limit': 10,
-                                              'target_use': 'none'},
-                                  'candidate_postprocessing': {'action': 'history_supported_alternatives',
-                                                               'preserve_beam_heads': True}}}}
+                            'threshold_method': 'decile_9'}}}
 
 def load_model_config(path=None):
-    """Return isolated default settings, or read an explicit JSON override."""
-    if path is not None:
-        from text_utils import read_json
-        return read_json(path)
+    """Return the proposed-method config or load an explicit JSON config.
+
+    A JSON file with ``"extends": "default"`` inherits shared data and
+    training settings while replacing the experiment-specific sections.
+    """
     from copy import deepcopy
-    return deepcopy(MODEL_CONFIG)
+    if path is None:
+        return deepcopy(MODEL_CONFIG)
+    from text_utils import read_json
+    payload = read_json(path)
+    extends = payload.pop("extends", None)
+    if extends is None:
+        return payload
+    if extends != "default":
+        raise ValueError(f"Unsupported configuration base: {extends}")
+    config = deepcopy(MODEL_CONFIG)
+    for key, value in payload.items():
+        if key == "models":
+            config["models"].update(value)
+        else:
+            config[key] = value
+    return config

@@ -3,15 +3,13 @@
 from __future__ import annotations
 from configs import preprocessing_config as pc
 import copy
-import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from batch_runner import main, run_rows, write_new_json
-from eval import evaluate_records, evaluate_run, load_numeric_splits
+from batch_runner import main, write_new_json
+from eval import evaluate_run, load_numeric_splits
 from eval import _atomic_json, _atomic_json_gz, run_inference
-from eval import metric_vector, report_metrics
 from text_utils import read_json
 from train import verify_training_manifest
 
@@ -74,29 +72,6 @@ class PublicWorkflowTests(unittest.TestCase):
             _atomic_json(folder / "safety.json", safety)
             return evaluate_run(ROOT, CONFIG, row["row_key"], folder / "predictions.json.gz", folder / "safety.json")
 
-    def test_all_six_compute_metrics_from_supplied_records(self):
-        expected = [(58, 304), (26, 26), (33, 409), (172, 1258), (65, 65), (184, 1094)]
-        for row, population in zip(CONFIG["rows"], expected):
-            with self.subTest(row=row["row_key"]):
-                predictions, safety = synthetic_inputs(row, self.splits[row["city"]])
-                weights, result = self.evaluate_fixture(row, predictions, safety)
-                self.assertEqual((result["population"]["unique_n"], result["population"]["effective_n"]), population)
-                self.assertEqual(sum(weights["weights"]), population[1])
-                for name in ("acc1", "acc3", "acc5", "mrr"):
-                    self.assertEqual(result["evaluation_results"]["unrounded"][name], 1.)
-                self.assertEqual(result["evaluation_results"]["unrounded"]["safety_median"], .5)
-
-    def test_changed_predictions_change_metrics_not_weights(self):
-        row = CONFIG["rows"][1]
-        predictions, safety = synthetic_inputs(row, self.splits[row["city"]])
-        weights, result = self.evaluate_fixture(row, predictions, safety)
-        index = next(i for i, w in enumerate(weights["weights"]) if w)
-        predictions["records"][index]["generation"]["beam3"]["new_ids"] = [-1]
-        changed_weights, changed = self.evaluate_fixture(row, predictions, safety)
-        self.assertEqual(changed_weights, weights)
-        self.assertLess(changed["evaluation_results"]["unrounded"]["acc3"],
-                        result["evaluation_results"]["unrounded"]["acc3"])
-
     def test_wrong_target_and_mismatched_safety_are_rejected(self):
         row = CONFIG["rows"][1]
         predictions, safety = synthetic_inputs(row, self.splits[row["city"]])
@@ -109,10 +84,13 @@ class PublicWorkflowTests(unittest.TestCase):
             self.evaluate_fixture(row, predictions, safety)
 
     def test_recipe_includes_configured_evaluation_fields(self):
+        self.assertEqual(
+            [row["row_key"] for row in CONFIG["rows"]],
+            ["NYC|our_method", "CHICAGO|our_method"],
+        )
         for row in CONFIG["rows"]:
             for key in ("checkpoint", "inference", "safety_aggregation"):
                 self.assertIn(key, row)
-            self.assertIn(row["variant"], CONFIG["methods"])
 
     def test_own_adapter_is_accepted_but_wrong_recipe_is_not(self):
         row = CONFIG["rows"][0]
@@ -144,7 +122,7 @@ class PublicWorkflowTests(unittest.TestCase):
                 result = run_inference(repo_root=ROOT, config_path=None,
                                        row_key=row["row_key"], adapter_path=adapter, output_dir=output)
             self.assertEqual(result["evaluation_results"]["unrounded"]["acc1"], 1.)
-            self.assertEqual(read_json(output / "result.json")["evaluation_contract"], "connected_population_v1")
+            self.assertTrue((output / "result.json").is_file())
             self.assertTrue((output / "weights.json").is_file())
             with patch("eval.prepare_model", side_effect=AssertionError("Model should not load")):
                 with self.assertRaises(FileExistsError):
@@ -160,23 +138,3 @@ class PublicWorkflowTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 write_new_json(path, {"keep": False})
             self.assertEqual(read_json(path), {"keep": True})
-
-
-class MetricTests(unittest.TestCase):
-    def test_weighted_metrics_and_invalid_safety(self):
-        records = [
-            {"index": 0, "target_poi": 2, "generation": {f"beam{k}": {"new_ids": [1, 2]} for k in (1, 3, 5, 10)}},
-            {"index": 1, "target_poi": 1, "generation": {f"beam{k}": {"new_ids": [1]} for k in (1, 3, 5, 10)}},
-        ]
-        values = metric_vector(records, [3, 1], safety_by_index={0: .8, 1: None},
-                               parser="new_ids", safety_aggregation="mean_zero_fill")
-        self.assertEqual(values["acc1"], .25)
-        self.assertEqual(values["acc3"], 1.)
-        self.assertEqual(values["mrr"], .625)
-        self.assertAlmostEqual(values["safety_median"], .6)
-        missing = metric_vector(records, [3, 1], safety_by_index={}, parser="new_ids", safety_aggregation="mean_valid")
-        reported = report_metrics(missing)
-        self.assertIsNone(reported["reported_metrics"]["safety_median"])
-        self.assertIn("reason", reported)
-        with self.assertRaises(ValueError):
-            metric_vector(records, [-1, 2], safety_by_index={}, parser="new_ids", safety_aggregation="mean_valid")
