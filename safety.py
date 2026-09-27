@@ -488,9 +488,7 @@ def score_safety(
             rows.append({"index": index, "prediction": prediction, "status": "invalid_poi"})
             scores.append(None)
             continue
-        # The configured post-inference Safety calculation uses the held-out
-        # visit as route origin. It is never used in a prompt, ranker, or generation.
-        origin = frame.iloc[-1]
+        origin = frame.iloc[-2]
         start = (float(origin.longitude), float(origin.latitude))
         destination = poi_map[prediction]
         route, route_source = get_route(
@@ -527,7 +525,7 @@ def score_safety(
             "city": city,
             "projected_crs": runtime["projected_crs"],
             "nominal_buffer": profile["crime_radius_m"],
-            "effective_buffer_m": profile["crime_radius_m"] * (1200.0 / 3937.0),
+            "effective_buffer_m": profile["crime_radius_m"],
             "crime_window_weeks": profile["crime_time_weeks"],
             "route_origin": runtime["route_origin"],
             "major_nyc_offenses_only": runtime["major_nyc_offenses_only"],
