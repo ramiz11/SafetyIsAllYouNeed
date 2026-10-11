@@ -1,0 +1,10 @@
+If `preprocessing.build_crime_geodf(...)` crashes with a pyproj/PROJ error like
+"no database context specified", set PROJ's data directory explicitly.
+
+1) In your shell (Conda example):
+1.1) export PROJ_LIB="$CONDA_PREFIX/share/proj"
+1.2) projinfo EPSG:4326
+
+2) Or in Python (before CRS operations):
+2.1) import os, pyproj
+2.2) pyproj.datadir.set_data_dir(os.path.join(os.environ["CONDA_PREFIX"], "share", "proj"))
